@@ -5,7 +5,7 @@
 	"main": "src/index.ts",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"build": "bun build src/index.ts --banner=\"$(cat banner.txt)\" --outfile dist/moodleblog.user.js --target browser",
+		"build": "bun build src/index.ts --banner=\"$(cat banner.txt)\" --outfile dist/moodleblog.user.js --target browser --minify",
 		"typecheck": "bun check",
 		"fmt": "bun fmt --use-tabs --single-quote"
 	},
