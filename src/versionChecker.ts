@@ -8,7 +8,12 @@ export async function isNewVersionAvailable() {
         return false;
     }
 
-    const res = await fetch("https://raw.githubusercontent.com/htl-stp/moodle-blog-patch/refs/heads/main/package.json")
+    const res = await fetch(
+        `https://raw.githubusercontent.com/htl-stp/moodle-blog-patch/refs/heads/main/package.json?t=${Date.now()}`,
+        {
+            cache: "no-store"
+        }
+    )
 
     const json = await res.json();
 
@@ -16,5 +21,5 @@ export async function isNewVersionAvailable() {
 
     sessionStorage.setItem("newVersionAvailable", newVersionAvailable ? "1" : "0");
 
-    return true;
+    return newVersionAvailable;
 }
