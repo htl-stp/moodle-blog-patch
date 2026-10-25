@@ -25,6 +25,7 @@ export function BlogPost(post: FetchedPost) {
 
 	doc.querySelectorAll("img").forEach((img) => {
 		img.style.maxWidth = "50%";
+		img.style.maxHeight = "60%";
 	});
 
 	const sanitizedContent = doc.body.innerHTML;
