@@ -1,8 +1,9 @@
-import { FetchedPost, Post, PostPayload, UserConfig } from './types';
 import { addBlogLink } from './html/addBlogLink';
 import { modifyAddBlogPage } from './html/modifyAddBlogPage';
 import { modifyBlogPage } from './html/modifyBlogPage';
 import { MoodleApi } from './moodleApi';
+import {FetchedPost, Post, PostSchema, StoredPost, StoredPostSchema} from './types';
+import { Config } from './Config';
 
 function modifyHTML(fn: Function) {
 	const observer = new MutationObserver(() => {
@@ -42,42 +43,38 @@ function setupFetchIntercept() {
 	};
 }
 
-async function saveConfig(config: UserConfig) {
-	const str = JSON.stringify(config);
+async function saveConfig(config: Config) {
+	const str = await config.serialize();
 
 	await MoodleApi.getInstance().setDescription(str);
 }
 
 async function addPost(
-	config: UserConfig,
+	config: Config,
 	title: string,
 	content: string,
 	tags: string[],
 ) {
-	const p: PostPayload = {
-		v: 1,
+	const p: Post = {
 		id: crypto.randomUUID(),
 		title,
 		content,
 		tags,
 		created: Date.now(),
 	};
-	config.posts.push({ payload: JSON.stringify(p) });
+	config.data.posts.push({ payload: JSON.stringify(p) } satisfies StoredPost);
 	await saveConfig(config);
 }
 
-async function loadConfig(): Promise<UserConfig> {
+async function loadConfig(): Promise<Config> {
 	const str = await MoodleApi.getInstance().getDescription();
 
 	try {
-		const config = parseConfig(str!);
+		const config = await Config.fromDescription(str!);
 
 		return config;
 	} catch (e) {
-		const config: UserConfig = {
-			posts: [],
-			v: 1,
-		};
+		const config = new Config({ posts: [] });
 
 		await saveConfig(config);
 
@@ -107,53 +104,7 @@ async function getInterestedUsersForTag(tag: string) {
 }
 
 function parsePostPayload(str: string) {
-	const payload: PostPayload = JSON.parse(str);
-
-	if (
-		!Object.hasOwn(payload, 'v') ||
-		!Object.hasOwn(payload, 'id') ||
-		!Object.hasOwn(payload, 'title') ||
-		!Object.hasOwn(payload, 'content') ||
-		!Object.hasOwn(payload, 'tags') ||
-		!Object.hasOwn(payload, 'created')
-	) {
-		throw new Error('invalid post payload');
-	}
-
-	if (!Array.isArray(payload.tags)) {
-		throw new Error('tags must be an array');
-	}
-
-	if (
-		!Number.isInteger(payload.v) ||
-		!(payload.v > 0) ||
-		!Number.isInteger(payload.created) ||
-		!(payload.created > 0)
-	) {
-		throw new Error('invalid post payload');
-	}
-
-	if (payload.title.length > 128 || payload.content.length > 2000) {
-		throw new Error('invalid post payload');
-	}
-
-	return payload;
-}
-
-function parseConfig(str: string) {
-	const configJson: UserConfig = JSON.parse(str);
-
-	if (!Object.hasOwn(configJson, 'posts') || !Object.hasOwn(configJson, 'v')) {
-		throw new Error('invalid config');
-	}
-
-	for (const post of configJson.posts) {
-		const payload = post.payload;
-
-		parsePostPayload(payload);
-	}
-
-	return configJson;
+	return PostSchema.parse(JSON.parse(str));
 }
 
 async function getFeed() {
@@ -169,12 +120,12 @@ async function getFeed() {
 			continue;
 		}
 
+		console.log(description)
+
 		try {
-			const conf: UserConfig = parseConfig(description);
+			const config: Config = await Config.fromDescription(description);
 
-			console.log(conf);
-
-			const postPayloads: PostPayload[] = conf.posts.map((p) =>
+			const postPayloads: Post[] = config.data.posts.map((p) =>
 				parsePostPayload(p.payload),
 			);
 			let fetchedPosts: FetchedPost[] = postPayloads.map((p) => ({
@@ -194,9 +145,12 @@ async function getFeed() {
 
 			posts.push(...fetchedPosts);
 
-			console.log(`received ${conf.posts.length} posts from ${user.user}`);
+			console.log(
+				`received ${config.data.posts.length} posts from ${user.user}`,
+			);
 		} catch (e) {
-			console.log(e);
+			console.log(`Error for: ${user.user}`);
+			console.error(e);
 		}
 	}
 
@@ -205,7 +159,7 @@ async function getFeed() {
 	return posts;
 }
 
-let config: UserConfig;
+let config: Config;
 
 (async function () {
 	'use strict';

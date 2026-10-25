@@ -1,19 +1,39 @@
-export type PostPayload = {
-	v: 1;
-	id: string;
-	title: string;
-	content: string;
-	tags: string[];
-	created: number;
-};
+import { z } from 'zod';
+import {VERSION} from "./constants";
 
-export type Post = { payload: string };
+export const EncodedConfigSchema = z.object({
+	v: z.literal(VERSION, {error: "Invalid Version"}),
+	format: z.enum(['gzip', 'none']),
+	configPayload: z.string(),
+});
 
-export type UserConfig = { v: 1; posts: Post[] };
+export const PostSchema = z.object({
+	id: z.string(),
+	title: z.string(),
+	content: z.string(),
+	tags: z.array(z.string()),
+	created: z.number(),
+});
 
-export type FetchedPost = PostPayload & {
+export type Post = z.infer<typeof PostSchema>;
+
+export const StoredPostSchema = z.object({
+	payload: z.string(),
+});
+
+export type StoredPost = z.infer<typeof StoredPostSchema>;
+
+export const ConfigSchema = z.object({
+	posts: z.array(StoredPostSchema),
+	// comments
+	// likes
+});
+
+export type FetchedPost = Post & {
 	author: string;
 	authorId: number;
 };
+
+export type ConfigData = z.infer<typeof ConfigSchema>;
 
 export type SubmitHook = (title: string, description: string) => void;
