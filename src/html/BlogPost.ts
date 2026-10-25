@@ -1,5 +1,5 @@
 import { FetchedPost } from '../types';
-import { escapeHtml } from '../html';
+import {escapeHtml, sanitizeHTML} from '../html';
 
 export function BlogPost(post: FetchedPost) {
 	const title = post.title;
@@ -19,6 +19,16 @@ export function BlogPost(post: FetchedPost) {
 		.split(' ')
 		.map((p) => p[0])
 		.join('');
+
+
+	const doc = new DOMParser().parseFromString(sanitizeHTML(content), 'text/html');
+
+	doc.querySelectorAll("img").forEach((img) => {
+		img.style.maxWidth = "50%";
+	});
+
+	const sanitizedContent = doc.body.innerHTML;
+
 
 	const html = `
         <div id="b22" class="forumpost blog_entry blog clearfix site">
@@ -50,7 +60,7 @@ export function BlogPost(post: FetchedPost) {
             </div>
             
             
-            <div class="no-overflow" style="white-space: pre-wrap;">${escapeHtml(content)}</div>
+            <div class="no-overflow" style="white-space: pre-wrap;">${sanitizedContent}</div>
             
             
             <div class="commands"><a href="https://moodle.htlstp.ac.at/blog/index.php">Permalink</a></div>
