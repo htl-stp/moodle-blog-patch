@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import {VERSION} from "./constants";
+import {z} from "zod";
 
 export const EncodedConfigSchema = z.object({
 	v: z.literal(VERSION, {error: "Invalid Version"}),
@@ -9,8 +9,8 @@ export const EncodedConfigSchema = z.object({
 
 export const PostSchema = z.object({
 	id: z.string(),
-	title: z.string(),
-	content: z.string(),
+	title: z.string().max(128),
+	content: z.string().max(2000),
 	tags: z.array(z.string()),
 	created: z.number(),
 });

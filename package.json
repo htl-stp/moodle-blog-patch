@@ -10,13 +10,14 @@
 		"fmt": "bun fmt --use-tabs --single-quote"
 	},
 	"author": "daftvoid",
-	"license": "ISC",
+	"license": "GPL-3.0-or-later",
 	"devDependencies": {
 		"typescript": "^7.0.2",
 		"@types/bun": "latest"
 	},
 	"private": true,
 	"dependencies": {
+		"dompurify": "^3.4.17",
 		"zod": "^4.6.7"
 	}
 }
