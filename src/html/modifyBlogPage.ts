@@ -1,7 +1,7 @@
 import { FetchedPost } from '../types';
 import { BlogPost } from './BlogPost';
 
-export function modifyBlogPage(posts: FetchedPost[]) {
+export function modifyBlogPage(posts: FetchedPost[], newVersion: boolean) {
 	console.log(`modified blog page with ${posts.length} posts`);
 
 	return () => {
@@ -16,7 +16,7 @@ export function modifyBlogPage(posts: FetchedPost[]) {
             <div id="region-main-box" class="region-main">
                 <div id="region-main" class="region-main-content">
                     <span class="notifications" id="user-notifications"></span>
-                    <div role="main"><span id="maincontent"></span><h2>Site blog</h2><nav aria-label="Page" class="pagination pagination-centered justify-content-center">
+                    <div role="main"><span id="maincontent"></span><h2>Site blog ${newVersion ? "<a href='https://github.com/htl-stp/moodle-blog-patch' style='font-size: 0.6em;'>(New Version available!)</a>" : ""}</h2><nav aria-label="Page" class="pagination pagination-centered justify-content-center">
         <!--
         <ul class="mt-1 pagination flex-wrap justify-content-center" data-page-size="10">
                 <li class="page-item" data-page-number="2">

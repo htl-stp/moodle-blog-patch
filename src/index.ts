@@ -4,6 +4,7 @@ import { modifyBlogPage } from './html/modifyBlogPage';
 import { MoodleApi } from './moodleApi';
 import {FetchedPost, Post, PostSchema, StoredPost, StoredPostSchema} from './types';
 import { Config } from './Config';
+import {isNewVersionAvailable} from "./versionChecker";
 
 function modifyHTML(fn: Function) {
 	const observer = new MutationObserver(() => {
@@ -167,10 +168,12 @@ let config: Config;
 	modifyHTML(addBlogLink);
 
 	if (location.href.startsWith('https://moodle.htlstp.ac.at/blog/index.php')) {
-		modifyHTML(modifyBlogPage([]));
+		modifyHTML(modifyBlogPage([], false));
 
 		const posts = await getFeed();
-		modifyBlogPage(posts)();
+		const newVersion = await isNewVersionAvailable();
+
+		modifyBlogPage(posts, newVersion)();
 	} else if (
 		location.href.startsWith('https://moodle.htlstp.ac.at/blog/edit.php')
 	) {
