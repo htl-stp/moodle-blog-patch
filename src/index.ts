@@ -1,18 +1,9 @@
-import { addBlogLink } from './html/addBlogLink';
-import { modifyAddBlogPage } from './html/modifyAddBlogPage';
-import { modifyBlogPage } from './html/modifyBlogPage';
-import { MoodleApi } from './moodleApi';
-import {
-	Badge,
-	FetchedPost,
-	LegacyConfigSchema,
-	LegacyPostSchema,
-	Post,
-	PostSchema,
-	StoredPost,
-	StoredPostSchema
-} from './types';
-import { Config } from './Config';
+import {addBlogLink} from './html/addBlogLink';
+import {modifyAddBlogPage} from './html/modifyAddBlogPage';
+import {modifyBlogPage} from './html/modifyBlogPage';
+import {MoodleApi} from './moodleApi';
+import {FetchedPost, Post, PostSchema, StoredPost} from './types';
+import {Config} from './Config';
 import {isNewVersionAvailable} from "./versionChecker";
 import {MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT} from "./constants";
 
@@ -60,6 +51,9 @@ async function saveConfig(config: Config) {
 	await MoodleApi.getInstance().setDescription(str);
 }
 
+const newPostId = () =>
+	Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, '0')).join('');
+
 async function addPost(
 	config: Config,
 	title: string,
@@ -67,7 +61,7 @@ async function addPost(
 	tags: string[],
 ) {
 	const p: Post = {
-		id: crypto.randomUUID(),
+		id: newPostId(),
 		title,
 		content,
 		tags,
