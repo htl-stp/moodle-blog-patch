@@ -1,6 +1,5 @@
 import { compressJson, decompressJson } from './compression';
-import { ConfigData, ConfigSchema, EncodedConfigSchema } from './types';
-import {VERSION} from "./constants";
+import {CONFIG_VERSION, ConfigData, ConfigSchema, EncodedConfigSchema} from './types';
 
 
 export class Config {
@@ -30,7 +29,7 @@ export class Config {
 		const encodedConfig = await compressJson(json);
 
 		return JSON.stringify({
-			v: VERSION,
+			v: CONFIG_VERSION,
 			format: 'gzip',
 			configPayload: encodedConfig,
 		});

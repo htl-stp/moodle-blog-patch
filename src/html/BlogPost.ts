@@ -52,6 +52,23 @@ export function BlogPost(post: FetchedPost) {
                 <a href="https://moodle.htlstp.ac.at/user/view.php?id=${authorId}">${escapeHtml(author)}</a>
                 - ${date}
             </div>
+            `
+		+
+		(post.badge ? `
+            <div>
+            	<div style="
+					background-color: ${post.badge.backgroundColor}; 
+					color: ${post.badge.color}; 
+					border-radius: 10px;
+					padding: 2px 4px;
+					display: inline-block;
+            	">
+            		${post.badge.text}
+				</div>
+			</div>
+		` : '')
+		+
+`
         </div>
     </div>
     <div class="row maincontent clearfix">

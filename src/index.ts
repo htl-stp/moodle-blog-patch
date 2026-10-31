@@ -2,7 +2,7 @@ import { addBlogLink } from './html/addBlogLink';
 import { modifyAddBlogPage } from './html/modifyAddBlogPage';
 import { modifyBlogPage } from './html/modifyBlogPage';
 import { MoodleApi } from './moodleApi';
-import {FetchedPost, Post, PostSchema, StoredPost, StoredPostSchema} from './types';
+import {Badge, FetchedPost, Post, PostSchema, StoredPost, StoredPostSchema} from './types';
 import { Config } from './Config';
 import {isNewVersionAvailable} from "./versionChecker";
 
@@ -126,15 +126,24 @@ async function getFeed() {
 		try {
 			const config: Config = await Config.fromDescription(description);
 
-			const postPayloads: Post[] = config.data.posts.map((p) =>
+			let postPayloads: Post[] = [];
+			let badge = {
+				text: 'Unverified Post',
+				backgroundColor: '#ff0000',
+				color: '#fff'
+			};
+
+			postPayloads = config.data.posts.map((p) =>
 				parsePostPayload(p.payload),
-			);
+			)
+
 			let fetchedPosts: FetchedPost[] = postPayloads.map((p) => ({
 				...p,
 				title: p.title.trim(),
 				content: p.content.trim(),
 				authorId: user.id,
 				author: user.user,
+				badge: badge
 			}));
 
 			fetchedPosts = fetchedPosts.filter((p) => {
@@ -198,7 +207,7 @@ let config: Config;
 				try {
 					await addPost(config, title, description, []);
 				} catch (e) {
-					alert('Could not add post to blog');
+					alert(`Could not add post to blog. Reason: ${(e as Error).message}`);
 				}
 
 				await MoodleApi.getInstance().addInterests(['moodle']);
