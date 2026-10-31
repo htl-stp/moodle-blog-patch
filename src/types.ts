@@ -1,40 +1,58 @@
-import {VERSION} from "./constants";
+import {MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT, VERSION} from "./constants";
 import {z} from "zod";
 
-export const CONFIG_VERSION = "0.0.2"
-
 export const EncodedConfigSchema = z.object({
-    v: z.literal(CONFIG_VERSION, {error: "Invalid Version"}),
-    format: z.enum(['gzip', 'none']),
+    v: z.string(),
+    format: z.string(),
     configPayload: z.string(),
 });
 
 export const PostSchema = z.object({
     id: z.string(),
-    title: z.string().min(1).max(128),
-    content: z.string().max(2000),
+    title: z.string().min(1).max(MAX_TITLE_LIMIT),
+    content: z.string().max(MAX_CONTENT_LIMIT),
     tags: z.array(z.string().min(1).max(32)).max(10),
     created: z.number().int().positive(),
-
-    signature: z.unknown().optional(),
 });
 
 export type Post = z.infer<typeof PostSchema>;
 
 export const StoredPostSchema = z.object({
     payload: z.string().max(3000),
-    sig: z.string().optional() // to verify posts (in later versions)
+    signature: z.unknown().optional() // to verify posts (in later versions)
 });
 
 export type StoredPost = z.infer<typeof StoredPostSchema>;
 
 export const ConfigSchema = z.object({
-    posts: z.array(StoredPostSchema).max(200).default([]),
+    posts: z.array(StoredPostSchema).max(100).default([]),
 
     comments: z.unknown().optional(),
     likes: z.unknown().optional(),
     pubKey: z.unknown().optional()
 });
+
+export const LegacyPostSchema = z.object({
+    v: z.literal(1),
+    id: z.string(),
+    title: z.string().min(1).max(128),
+    content: z.string().max(2000),
+    tags: z.array(z.string().min(1).max(32)).max(10),
+    created: z.number().int().positive(),
+}).transform(p => {
+    return PostSchema.parse(p)
+});
+
+export const LegacyConfigSchema = z.object({
+    posts: z.array(
+        z.object({
+            payload: z.string().min(1)
+        })
+    ).max(100).default([]),
+    v: z.number().int().positive(),
+}).transform(c => {
+    return ConfigSchema.parse(c)
+})
 
 export type Badge = {
     backgroundColor: string,

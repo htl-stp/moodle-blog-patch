@@ -2,9 +2,19 @@ import { addBlogLink } from './html/addBlogLink';
 import { modifyAddBlogPage } from './html/modifyAddBlogPage';
 import { modifyBlogPage } from './html/modifyBlogPage';
 import { MoodleApi } from './moodleApi';
-import {Badge, FetchedPost, Post, PostSchema, StoredPost, StoredPostSchema} from './types';
+import {
+	Badge,
+	FetchedPost,
+	LegacyConfigSchema,
+	LegacyPostSchema,
+	Post,
+	PostSchema,
+	StoredPost,
+	StoredPostSchema
+} from './types';
 import { Config } from './Config';
 import {isNewVersionAvailable} from "./versionChecker";
+import {MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT} from "./constants";
 
 function modifyHTML(fn: Function) {
 	const observer = new MutationObserver(() => {
@@ -104,8 +114,34 @@ async function getInterestedUsersForTag(tag: string) {
 	return users;
 }
 
-function parsePostPayload(str: string) {
-	return PostSchema.parse(JSON.parse(str));
+function parsePostPayload(storedPost: StoredPost, authorId: number, author: string): FetchedPost | null {
+	const json = JSON.parse(storedPost.payload)
+
+	let badge = null;
+
+	if (json.v === 1) {
+		badge = {
+			text: 'Legacy Post (v0.0.1)',
+			backgroundColor: '#dd0000',
+			color: '#fff',
+		}
+	}
+
+	let post: Post;
+	const safe = PostSchema.safeParse(json);
+
+	if (safe.success) {
+		post = safe.data;
+	} else {
+		return null;
+	}
+
+	return {
+		...post,
+		author,
+		authorId,
+		badge: badge
+	}
 }
 
 async function getFeed() {
@@ -121,30 +157,14 @@ async function getFeed() {
 			continue;
 		}
 
-		console.log(description)
-
 		try {
 			const config: Config = await Config.fromDescription(description);
 
-			let postPayloads: Post[] = [];
-			let badge = {
-				text: 'Unverified Post',
-				backgroundColor: '#ff0000',
-				color: '#fff'
-			};
+			let fetchedPosts: FetchedPost[] = [];
 
-			postPayloads = config.data.posts.map((p) =>
-				parsePostPayload(p.payload),
-			)
-
-			let fetchedPosts: FetchedPost[] = postPayloads.map((p) => ({
-				...p,
-				title: p.title.trim(),
-				content: p.content.trim(),
-				authorId: user.id,
-				author: user.user,
-				badge: badge
-			}));
+			fetchedPosts = config.data.posts.map((p) =>
+				parsePostPayload(p, user.id, user.user),
+			).filter(p => p !== null)
 
 			fetchedPosts = fetchedPosts.filter((p) => {
 				return (
@@ -192,12 +212,12 @@ let config: Config;
 
 				config = await loadConfig();
 
-				if (title.length > 128) {
+				if (title.length > MAX_TITLE_LIMIT) {
 					alert(`Title is too long. Max length: 128, actual: ${title.length}`);
 					return;
 				}
 
-				if (description.length > 2000) {
+				if (description.length > MAX_CONTENT_LIMIT) {
 					alert(
 						`Description is too long. Max length: 2000, actual: ${description.length}`,
 					);
@@ -206,13 +226,13 @@ let config: Config;
 
 				try {
 					await addPost(config, title, description, []);
+
+					await MoodleApi.getInstance().addInterests(['moodle']);
+
+					location.href = 'https://moodle.htlstp.ac.at/blog/index.php';
 				} catch (e) {
 					alert(`Could not add post to blog. Reason: ${(e as Error).message}`);
 				}
-
-				await MoodleApi.getInstance().addInterests(['moodle']);
-
-				location.href = 'https://moodle.htlstp.ac.at/blog/index.php';
 			}),
 		);
 	}

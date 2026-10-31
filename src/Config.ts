@@ -1,12 +1,27 @@
 import { compressJson, decompressJson } from './compression';
-import {CONFIG_VERSION, ConfigData, ConfigSchema, EncodedConfigSchema} from './types';
-
+import {ConfigData, ConfigSchema, EncodedConfigSchema, LegacyConfigSchema} from './types';
+import {CONFIG_VERSION, READABLE_CONFIG_VERSIONS} from "./constants";
 
 export class Config {
 	constructor(public data: ConfigData) {}
 
 	private static async decodeRawConfig(raw: string): Promise<ConfigData> {
-		const encoded = EncodedConfigSchema.parse(JSON.parse(raw));
+		const json = JSON.parse(raw);
+
+		const safe = EncodedConfigSchema.safeParse(json);
+
+		if (safe.error) {
+			return LegacyConfigSchema.parse(json);
+		}
+
+		const encoded = safe.data;
+
+		const versionOk = READABLE_CONFIG_VERSIONS.includes(encoded.v);
+		const formatOk = ['gzip', 'none'].includes(encoded.format);
+
+		if (!versionOk || !formatOk) {
+			throw new Error('Invalid Config');
+		}
 
 		if (encoded.format === 'gzip') {
 			const json = JSON.parse(await decompressJson(encoded.configPayload));
