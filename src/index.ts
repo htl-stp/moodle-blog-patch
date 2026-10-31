@@ -51,7 +51,7 @@ async function saveConfig(config: Config) {
 	await MoodleApi.getInstance().setDescription(str);
 }
 
-const newPostId = () =>
+const generateNewPostId = () =>
 	Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, '0')).join('');
 
 async function addPost(
@@ -60,8 +60,15 @@ async function addPost(
 	content: string,
 	tags: string[],
 ) {
+	const postIds = config.data.posts.map(p => PostSchema.parse(p.payload)).map(p => p.id)
+
+	let id: string;
+	do {
+		id = generateNewPostId();
+	} while (postIds.includes(id));
+
 	const p: Post = {
-		id: newPostId(),
+		id: id,
 		title,
 		content,
 		tags,
