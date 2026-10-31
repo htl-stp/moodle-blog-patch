@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Moodle Blog Patch (prototype)
-// @version      2026-10-25 (v0.0.2)
+// @version      v0.0.3
 // @description  adds the blogs back
 // @author       daftvoid
 // @match        https://moodle.htlstp.ac.at/*
