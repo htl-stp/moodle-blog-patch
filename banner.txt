@@ -6,6 +6,8 @@
 // @match        https://moodle.htlstp.ac.at/*
 // @exclude      https://moodle.htlstp.ac.at/login/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=mozilla.org
+// @updateURL    https://github.com/htl-stp/moodle-blog-patch/releases/latest/download/moodleblog.user.js
+// @downloadURL  https://github.com/htl-stp/moodle-blog-patch/releases/latest/download/moodleblog.user.js
 // @grant        none
 // @run-at       document-start
 // ==/UserScript==
