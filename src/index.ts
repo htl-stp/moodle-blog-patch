@@ -5,7 +5,7 @@ import {MoodleApi} from './moodleApi';
 import {FetchedPost, Post, PostSchema, StoredPost} from './types';
 import {Config} from './Config';
 import {isNewVersionAvailable} from "./versionChecker";
-import {MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT} from "./constants";
+import {MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT, POST_VERSION} from "./constants";
 
 function modifyHTML(fn: Function) {
 	const observer = new MutationObserver(() => {
@@ -60,7 +60,7 @@ async function addPost(
 	content: string,
 	tags: string[],
 ) {
-	const postIds = config.data.posts.map(p => PostSchema.parse(p.payload)).map(p => p.id)
+	const postIds = config.data.posts.map(p => PostSchema.parse(JSON.parse(p.payload))).map(p => p.id)
 
 	let id: string;
 	do {
@@ -68,6 +68,7 @@ async function addPost(
 	} while (postIds.includes(id));
 
 	const p: Post = {
+		v: POST_VERSION,
 		id: id,
 		title,
 		content,
@@ -123,6 +124,24 @@ function parsePostPayload(storedPost: StoredPost, authorId: number, author: stri
 	if (json.v === 1) {
 		badge = {
 			text: 'Legacy Post (v0.0.1)',
+			backgroundColor: '#dd0000',
+			color: '#fff',
+		}
+	} else if (json.v === undefined) {
+		badge = {
+			text: 'Unverified Post (v0.0.2)',
+			backgroundColor: '#dd0000',
+			color: '#fff',
+		}
+	} else if (json.v === '0.0.3') {
+		badge = {
+			text: 'Unverified Post',
+			backgroundColor: '#dd0000',
+			color: '#fff',
+		}
+	} else {
+		badge = {
+			text: `Newer Version (${json.v})`,
 			backgroundColor: '#dd0000',
 			color: '#fff',
 		}

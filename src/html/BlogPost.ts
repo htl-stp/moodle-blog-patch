@@ -63,7 +63,7 @@ export function BlogPost(post: FetchedPost) {
 					padding: 2px 4px;
 					display: inline-block;
             	">
-            		${post.badge.text}
+            		${escapeHtml(post.badge.text)}
 				</div>
 			</div>
 		` : '')

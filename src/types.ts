@@ -8,6 +8,7 @@ export const EncodedConfigSchema = z.object({
 });
 
 export const PostSchema = z.object({
+    v: z.string().optional(),
     id: z.string(),
     title: z.string().min(1).max(MAX_TITLE_LIMIT),
     content: z.string().max(MAX_CONTENT_LIMIT),
