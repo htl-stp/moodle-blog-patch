@@ -15,6 +15,10 @@ export async function isNewVersionAvailable() {
         }
     )
 
+    if (!res.ok) {
+        return false;
+    }
+
     const json = await res.json();
 
     const newVersionAvailable = VERSION !== json.version;
