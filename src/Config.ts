@@ -24,7 +24,7 @@ export class Config {
 		}
 
 		if (encoded.format === 'gzip') {
-			const json = JSON.parse(await decompressJson(encoded.configPayload));
+			const json = JSON.parse(await decompressJson(encoded.configPayload, 21000));
 
 			return ConfigSchema.parse(json);
 		} else {
