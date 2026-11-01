@@ -1,5 +1,5 @@
 import { FetchedPost } from '../types';
-import {escapeHtml, sanitizeHTML} from '../html';
+import { escapeHtml, sanitizeHTML } from '../html';
 
 export function BlogPost(post: FetchedPost) {
 	const title = post.title;
@@ -20,18 +20,20 @@ export function BlogPost(post: FetchedPost) {
 		.map((p) => p[0])
 		.join('');
 
+	const doc = new DOMParser().parseFromString(
+		sanitizeHTML(content),
+		'text/html',
+	);
 
-	const doc = new DOMParser().parseFromString(sanitizeHTML(content), 'text/html');
-
-	doc.querySelectorAll("img").forEach((img) => {
-		img.style.maxWidth = "50%";
-		img.style.maxHeight = "60%";
+	doc.querySelectorAll('img').forEach((img) => {
+		img.style.maxWidth = '50%';
+		img.style.maxHeight = '60%';
 	});
 
 	const sanitizedContent = doc.body.innerHTML;
 
-
-	const html = `
+	const html =
+		`
         <div id="b22" class="forumpost blog_entry blog clearfix site">
     <div class="row header clearfix">
         <div class="left picture header">
@@ -52,9 +54,9 @@ export function BlogPost(post: FetchedPost) {
                 <a href="https://moodle.htlstp.ac.at/user/view.php?id=${authorId}">${escapeHtml(author)}</a>
                 - ${date}
             </div>
-            `
-		+
-		(post.badge ? `
+            ` +
+		(post.badge
+			? `
             <div>
             	<div style="
 					background-color: ${post.badge.backgroundColor}; 
@@ -66,9 +68,9 @@ export function BlogPost(post: FetchedPost) {
             		${escapeHtml(post.badge.text)}
 				</div>
 			</div>
-		` : '')
-		+
-`
+		`
+			: '') +
+		`
         </div>
     </div>
     <div class="row maincontent clearfix">

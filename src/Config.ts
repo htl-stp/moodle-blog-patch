@@ -1,6 +1,11 @@
 import { compressJson, decompressJson } from './compression';
-import {ConfigData, ConfigSchema, EncodedConfigSchema, LegacyConfigSchema} from './types';
-import {CONFIG_VERSION, READABLE_CONFIG_VERSIONS} from "./constants";
+import {
+	ConfigData,
+	ConfigSchema,
+	EncodedConfigSchema,
+	LegacyConfigSchema,
+} from './types';
+import { CONFIG_VERSION, READABLE_CONFIG_VERSIONS } from './constants';
 
 export class Config {
 	constructor(public data: ConfigData) {}
@@ -24,7 +29,9 @@ export class Config {
 		}
 
 		if (encoded.format === 'gzip') {
-			const json = JSON.parse(await decompressJson(encoded.configPayload, 21000));
+			const json = JSON.parse(
+				await decompressJson(encoded.configPayload, 21000),
+			);
 
 			return ConfigSchema.parse(json);
 		} else {

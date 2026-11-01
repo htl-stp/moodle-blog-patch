@@ -1,11 +1,11 @@
-import {addBlogLink} from './html/addBlogLink';
-import {modifyAddBlogPage} from './html/modifyAddBlogPage';
-import {modifyBlogPage} from './html/modifyBlogPage';
-import {MoodleApi} from './moodleApi';
-import {FetchedPost, Post, PostSchema, StoredPost} from './types';
-import {Config} from './Config';
-import {isNewVersionAvailable} from "./versionChecker";
-import {MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT, POST_VERSION} from "./constants";
+import { addBlogLink } from './html/addBlogLink';
+import { modifyAddBlogPage } from './html/modifyAddBlogPage';
+import { modifyBlogPage } from './html/modifyBlogPage';
+import { MoodleApi } from './moodleApi';
+import { FetchedPost, Post, PostSchema, StoredPost } from './types';
+import { Config } from './Config';
+import { isNewVersionAvailable } from './versionChecker';
+import { MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT, POST_VERSION } from './constants';
 
 function modifyHTML(fn: Function) {
 	const observer = new MutationObserver(() => {
@@ -52,7 +52,9 @@ async function saveConfig(config: Config) {
 }
 
 const generateNewPostId = () =>
-	Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, '0')).join('');
+	Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) =>
+		b.toString(16).padStart(2, '0'),
+	).join('');
 
 async function addPost(
 	config: Config,
@@ -60,7 +62,9 @@ async function addPost(
 	content: string,
 	tags: string[],
 ) {
-	const postIds = config.data.posts.map(p => PostSchema.parse(JSON.parse(p.payload))).map(p => p.id)
+	const postIds = config.data.posts
+		.map((p) => PostSchema.parse(JSON.parse(p.payload)))
+		.map((p) => p.id);
 
 	let id: string;
 	do {
@@ -116,8 +120,12 @@ async function getInterestedUsersForTag(tag: string) {
 	return users;
 }
 
-function parsePostPayload(storedPost: StoredPost, authorId: number, author: string): FetchedPost | null {
-	const json = JSON.parse(storedPost.payload)
+function parsePostPayload(
+	storedPost: StoredPost,
+	authorId: number,
+	author: string,
+): FetchedPost | null {
+	const json = JSON.parse(storedPost.payload);
 
 	let badge = null;
 
@@ -126,25 +134,25 @@ function parsePostPayload(storedPost: StoredPost, authorId: number, author: stri
 			text: 'Legacy Post (v0.0.1)',
 			backgroundColor: '#dd0000',
 			color: '#fff',
-		}
+		};
 	} else if (json.v === undefined) {
 		badge = {
 			text: 'Unverified Post (v0.0.2)',
 			backgroundColor: '#dd0000',
 			color: '#fff',
-		}
+		};
 	} else if (json.v === '0.0.3') {
 		badge = {
 			text: 'Unverified Post',
 			backgroundColor: '#dd0000',
 			color: '#fff',
-		}
+		};
 	} else {
 		badge = {
 			text: `Newer Version (${json.v})`,
 			backgroundColor: '#dd0000',
 			color: '#fff',
-		}
+		};
 	}
 
 	let post: Post;
@@ -160,8 +168,8 @@ function parsePostPayload(storedPost: StoredPost, authorId: number, author: stri
 		...post,
 		author,
 		authorId,
-		badge: badge
-	}
+		badge: badge,
+	};
 }
 
 async function getFeed() {
@@ -182,9 +190,9 @@ async function getFeed() {
 
 			let fetchedPosts: FetchedPost[] = [];
 
-			fetchedPosts = config.data.posts.map((p) =>
-				parsePostPayload(p, user.id, user.user),
-			).filter(p => p !== null)
+			fetchedPosts = config.data.posts
+				.map((p) => parsePostPayload(p, user.id, user.user))
+				.filter((p) => p !== null);
 
 			fetchedPosts = fetchedPosts.filter((p) => {
 				return (

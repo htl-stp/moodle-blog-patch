@@ -1,4 +1,4 @@
-import {MOODLE_DESCRIPTION_LIMIT} from "./constants";
+import { MOODLE_DESCRIPTION_LIMIT } from './constants';
 
 export class MoodleApi {
 	private static instance = new MoodleApi();
@@ -75,7 +75,7 @@ export class MoodleApi {
 
 	async setDescription(description: string) {
 		if (description.length > MOODLE_DESCRIPTION_LIMIT) {
-			throw new Error('Description is too long!')
+			throw new Error('Description is too long!');
 		}
 
 		const form = await this.getProfileForm();
