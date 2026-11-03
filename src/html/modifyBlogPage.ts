@@ -5,6 +5,7 @@ export function modifyBlogPage(posts: FetchedPost[], newVersion: boolean) {
 	console.log(`modified blog page with ${posts.length} posts`);
 
 	return () => {
+		document.title = "Site blog | Moodleinformatik";
 		const pageContent = document.getElementById('page-content');
 
 		if (!pageContent) {
