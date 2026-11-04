@@ -1,4 +1,5 @@
 import { MOODLE_DESCRIPTION_LIMIT } from './constants';
+ import {PostChunkString} from "./tagStore";
 
 export class MoodleApi {
 	private static instance = new MoodleApi();
@@ -173,4 +174,32 @@ export class MoodleApi {
 			name: node.querySelector('td > a')?.textContent,
 		}));
 	}
+
+	async getInterestedUsersForTag(tag: string, page: number = 0) {
+		const res = await fetch(
+			`https://moodle.htlstp.ac.at/tag/index.php?tag=${tag}&ta=1&page=${page}`,
+		);
+
+		const html = await res.text();
+
+		const doc = new DOMParser().parseFromString(html, 'text/html');
+
+		const nodes = doc.querySelectorAll(
+			'div[id="tagarea-core-user"] > div > ul > li > div > div > a',
+		);
+
+		const users = Array.from(nodes).map((el) => ({
+			user: el.textContent!,
+			id: Number(el.getAttribute('href')?.split('?id=')[1]),
+		}));
+
+		if (doc.querySelector("#region-main .nextpage") !== null) {
+			users.push(...(await this.getInterestedUsersForTag(tag, page + 1)));
+		}
+
+		console.log(users);
+
+		return users;
+	}
+
 }

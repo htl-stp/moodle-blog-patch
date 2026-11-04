@@ -111,27 +111,6 @@ async function loadConfig(): Promise<Config> {
 	}
 }
 
-async function getInterestedUsersForTag(tag: string) {
-	const res = await fetch(
-		`https://moodle.htlstp.ac.at/tag/index.php?tag=${tag}`,
-	);
-
-	const html = await res.text();
-
-	const doc = new DOMParser().parseFromString(html, 'text/html');
-
-	const nodes = doc.querySelectorAll(
-		'div[id="tagarea-core-user"] > div > ul > li > div > div > a',
-	);
-
-	const users = Array.from(nodes).map((el) => ({
-		user: el.textContent!,
-		id: Number(el.getAttribute('href')?.split('?id=')[1]),
-	}));
-
-	return users;
-}
-
 export function parsePostTags(strings: string[]) {
 	const groups = new Map<string, string[]>();
 
@@ -225,7 +204,7 @@ function parsePostPayload(
 }
 
 async function getFeed() {
-	const users = await getInterestedUsersForTag('moodle');
+	const users = await MoodleApi.getInstance().getInterestedUsersForTag('moodle');
 	console.log(users);
 
 	const posts: FetchedPost[] = [];
