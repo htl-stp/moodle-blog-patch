@@ -120,7 +120,7 @@ export class MoodleApi {
 
 		const doc = new DOMParser().parseFromString(html, 'text/html');
 
-		return doc.querySelector('div[data-userid]')?.getAttribute('data-userid');
+		return Number(doc.querySelector('div[data-userid]')?.getAttribute('data-userid'));
 	}
 
 	async getEvidence() {

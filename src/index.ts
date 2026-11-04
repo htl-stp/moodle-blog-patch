@@ -6,6 +6,7 @@ import { FetchedPost, Post, PostSchema, StoredPost } from './types';
 import { Config } from './Config';
 import { isNewVersionAvailable } from './versionChecker';
 import { MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT, POST_VERSION } from './constants';
+import {StoredPostTags} from "./tagStore";
 
 function modifyHTML(fn: Function) {
 	const observer = new MutationObserver(() => {
@@ -58,6 +59,7 @@ const generateNewPostId = () =>
 
 async function addPost(
 	config: Config,
+	userid: number,
 	title: string,
 	content: string,
 	tags: string[],
@@ -73,14 +75,19 @@ async function addPost(
 
 	const p: Post = {
 		v: POST_VERSION,
+		userid: userid,
 		id: id,
 		title,
 		content,
 		tags,
 		created: Date.now(),
 	};
-	config.data.posts.push({ payload: JSON.stringify(p) } satisfies StoredPost);
-	await saveConfig(config);
+
+	const storedPost: StoredPost = { payload: JSON.stringify(p) };
+
+	const postTags = StoredPostTags.encode(storedPost);
+
+	await MoodleApi.getInstance().addInterests(postTags);
 }
 
 async function loadConfig(): Promise<Config> {
@@ -253,7 +260,10 @@ let config: Config;
 				}
 
 				try {
-					await addPost(config, title, description, []);
+					const userid = await MoodleApi.getInstance().fetchOwnUserId();
+					console.log(userid)
+
+					await addPost(config, userid, title, description, []);
 
 					await MoodleApi.getInstance().addInterests(['moodle']);
 
