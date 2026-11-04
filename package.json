@@ -12,8 +12,9 @@
 	"author": "daftvoid",
 	"license": "GPL-3.0-or-later",
 	"devDependencies": {
-		"typescript": "^7.0.2",
-		"@types/bun": "latest"
+		"@types/bun": "^1.4.4",
+		"@types/node": "^26.6.6",
+		"typescript": "^7.0.2"
 	},
 	"private": true,
 	"dependencies": {
