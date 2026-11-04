@@ -2,11 +2,12 @@ import { addBlogLink } from './html/addBlogLink';
 import { modifyAddBlogPage } from './html/modifyAddBlogPage';
 import { modifyBlogPage } from './html/modifyBlogPage';
 import { MoodleApi } from './moodleApi';
-import { FetchedPost, Post, PostSchema, StoredPost } from './types';
+import {FetchedPost, Post, PostSchema, StoredPost, StoredPostSchema} from './types';
 import { Config } from './Config';
 import { isNewVersionAvailable } from './versionChecker';
 import { MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT, POST_VERSION } from './constants';
-import {StoredPostTags} from "./tagStore";
+import {PostChunkString, StoredPostTags} from "./tagStore";
+import {z} from "zod";
 
 function modifyHTML(fn: Function) {
 	const observer = new MutationObserver(() => {
@@ -127,6 +128,46 @@ async function getInterestedUsersForTag(tag: string) {
 	return users;
 }
 
+export function parsePostTags(strings: string[]) {
+	const groups = new Map<string, string[]>();
+
+	console.log(strings);
+
+	for (const s of strings) {
+		const chunk = PostChunkString.safeDecode(s);
+		if (!chunk.success) continue; // not a chunk string, ignore it
+
+		const key = `${chunk.data.user_id}:${chunk.data.blog_id}`;
+		const list = groups.get(key);
+
+		if (list) list.push(s);
+		else groups.set(key, [s]);
+	}
+
+	// decode each group into a StoredPost, then parse the payload
+	const posts: z.output<typeof StoredPostSchema>[] = [];
+
+	for (const [key, list] of groups) {
+		const stored = StoredPostTags.safeDecode(list);
+		if (!stored.success) {
+			console.warn(`Skipping ${key}:`, stored.error.message);
+			continue;
+		}
+
+		const post = PostSchema.safeParse(JSON.parse(stored.data.payload));
+		if (!post.success) {
+			console.warn(`Skipping ${key}: invalid payload`);
+			continue;
+		}
+
+		posts.push(stored.data);
+	}
+
+	console.log(posts);
+
+	return posts;
+}
+
 function parsePostPayload(
 	storedPost: StoredPost,
 	authorId: number,
@@ -186,7 +227,7 @@ async function getFeed() {
 	const posts: FetchedPost[] = [];
 
 	for (const user of users) {
-		const description = await MoodleApi.getInstance().getDescription(user.id);
+		const {tags, description} = await MoodleApi.getInstance().getUserData(user.id);
 
 		if (!description) {
 			continue;
@@ -197,7 +238,7 @@ async function getFeed() {
 
 			let fetchedPosts: FetchedPost[] = [];
 
-			fetchedPosts = config.data.posts
+			fetchedPosts = [...config.data.posts, ...parsePostTags(tags)]
 				.map((p) => parsePostPayload(p, user.id, user.user))
 				.filter((p) => p !== null);
 
@@ -218,6 +259,8 @@ async function getFeed() {
 			console.error(e);
 		}
 	}
+
+	console.log(posts);
 
 	posts.sort((a, b) => b.created - a.created);
 

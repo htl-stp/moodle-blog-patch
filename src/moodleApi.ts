@@ -96,6 +96,36 @@ export class MoodleApi {
 		console.log('Submission response:', result.url, result.status);
 	}
 
+	async getUserData(userId?: number) {
+		const res = await fetch(
+			'https://moodle.htlstp.ac.at/user/profile.php' +
+			(userId ? `?id=${userId}` : ''),
+		);
+
+		const html = await res.text();
+
+		const doc = new DOMParser().parseFromString(html, 'text/html');
+
+
+		const tags: string[] = [];
+		{
+			const els = Array.from(doc.querySelectorAll("div.tag_list > ul > li > a"))
+
+			const _tags = els.map(el => el.textContent.trim());
+
+			tags.push(..._tags);
+		}
+
+		const description = doc.querySelector(
+			'div[id="region-main"] > div > div > div[class="description"]',
+		)?.textContent;
+
+		return {
+			tags,
+			description
+		}
+	}
+
 	async getTags(userId?: number) {
 		const res = await fetch(
 			'https://moodle.htlstp.ac.at/user/profile.php' +
