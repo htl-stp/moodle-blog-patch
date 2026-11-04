@@ -8,6 +8,10 @@ import { isNewVersionAvailable } from './versionChecker';
 import { MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT, POST_VERSION } from './constants';
 import {PostChunkString, StoredPostTags} from "./tagStore";
 import {z} from "zod";
+import {openModal} from "./modals";
+
+// required since types are now ["node", "bun"]
+declare const window: Window
 
 function modifyHTML(fn: Function) {
 	const observer = new MutationObserver(() => {
@@ -269,6 +273,9 @@ async function getFeed() {
 
 let config: Config;
 
+
+
+// main
 (async function () {
 	'use strict';
 
