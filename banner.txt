@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Moodle Blog Patch (prototype)
-// @version      v0.0.3
+// @version      v0.0.4
 // @description  adds the blogs back
 // @author       daftvoid
 // @match        https://moodle.htlstp.ac.at/*
@@ -8,7 +8,8 @@
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=mozilla.org
 // @updateURL    https://github.com/htl-stp/moodle-blog-patch/releases/latest/download/moodleblog.user.js
 // @downloadURL  https://github.com/htl-stp/moodle-blog-patch/releases/latest/download/moodleblog.user.js
-// @grant        none
+// @grant        GM_getValue
+// @grant        GM_setValue
 // @run-at       document-start
 // ==/UserScript==
 
