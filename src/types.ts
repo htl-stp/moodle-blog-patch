@@ -21,7 +21,7 @@ export type Post = z.infer<typeof PostSchema>;
 
 export const StoredPostSchema = z.object({
 	payload: z.string().max(3000),
-	signature: z.unknown().optional(), // to verify posts (in later versions)
+	signature: z.string().optional(), // to verify posts (in later versions)
 });
 
 export type StoredPost = z.infer<typeof StoredPostSchema>;
@@ -77,4 +77,4 @@ export type FetchedPost = Post & {
 
 export type ConfigData = z.infer<typeof ConfigSchema>;
 
-export type SubmitHook = (title: string, description: string) => void;
+export type SubmitHook = (title: string, description: string, passphrase: string) => void;

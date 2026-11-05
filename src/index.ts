@@ -10,7 +10,7 @@ import {PostChunkString, StoredPostTags} from "./tagStore";
 import {z} from "zod";
 import {openModal} from "./modals";
 import {generatePassphrase} from "./diceware";
-import {deriveKeypair} from "./crypto";
+import {deriveKeypair, sign, verify} from "./crypto";
 import {p256_hasher} from "@noble/curves/nist.js";
 
 // required since types are now ["node", "bun"]
@@ -71,6 +71,7 @@ async function addPost(
 	title: string,
 	content: string,
 	tags: string[],
+	privateKey: Uint8Array
 ) {
 	const postIds = config.data.posts
 		.map((p) => PostSchema.parse(JSON.parse(p.payload)))
@@ -92,6 +93,7 @@ async function addPost(
 	};
 
 	const storedPost: StoredPost = { payload: JSON.stringify(p) };
+	storedPost.signature = sign(storedPost.payload, privateKey);
 
 	const postTags = StoredPostTags.encode(storedPost);
 
@@ -158,6 +160,7 @@ function parsePostPayload(
 	storedPost: StoredPost,
 	authorId: number,
 	author: string,
+	public_key: string
 ): FetchedPost | null {
 	const json = JSON.parse(storedPost.payload);
 
@@ -185,6 +188,17 @@ function parsePostPayload(
 		badge = {
 			text: `Newer Version (${json.v})`,
 			backgroundColor: '#dd0000',
+			color: '#fff',
+		};
+	}
+
+	const verified = !!storedPost.signature &&
+		verify(storedPost.payload, storedPost.signature, public_key);
+
+	if (verified) {
+		badge = {
+			text: `Verified Post`,
+			backgroundColor: '#00cc00',
 			color: '#fff',
 		};
 	}
@@ -222,10 +236,14 @@ async function getFeed() {
 		try {
 			const config: Config = await Config.fromDescription(description);
 
+			if (!config.data.pubKey) {
+				throw new Error("User has no public key");
+			}
+
 			let fetchedPosts: FetchedPost[] = [];
 
 			fetchedPosts = [...config.data.posts, ...parsePostTags(tags)]
-				.map((p) => parsePostPayload(p, user.id, user.user))
+				.map((p) => parsePostPayload(p, user.id, user.user, config.data.pubKey!))
 				.filter((p) => p !== null);
 
 			fetchedPosts = fetchedPosts.filter((p) => {
@@ -341,47 +359,62 @@ let config = loadConfig();
 
 	modifyHTML(addBlogLink);
 
-	if (location.href.startsWith('https://moodle.htlstp.ac.at/blog/index.php')) {
+
+	const observer = new MutationObserver(() => {
+		modifyAddBlogPage(async (title, description, passphrase) => {
+			console.log(title, description, passphrase);
+
+			const userData = await MoodleApi.getInstance().getUserData();
+
+			const keys = await deriveKeypair(passphrase, userData.userid);
+
+			if (keys.publicKeyB64u !== (await config).data.pubKey) {
+				alert('Wrong passphrase!');
+				return;
+			}
+
+			if (title.length > MAX_TITLE_LIMIT) {
+				alert(`Title is too long. Max length: 128, actual: ${title.length}`);
+				return;
+			}
+
+			if (description.length > MAX_CONTENT_LIMIT) {
+				alert(
+					`Description is too long. Max length: 2000, actual: ${description.length}`,
+				);
+				return;
+			}
+
+			try {
+				const userid = await MoodleApi.getInstance().fetchOwnUserId();
+				console.log(userid)
+
+				await addPost(await config, userid, title, description, [], keys.privateKey);
+
+				await MoodleApi.getInstance().addInterests(['moodle']);
+
+				location.href = 'https://moodle.htlstp.ac.at/blog/index.php';
+			} catch (e) {
+				alert(`Could not add post to blog. Reason: ${(e as Error).message}`);
+			}
+		})();
+	});
+
+	observer.observe(document, {
+		childList: true,
+		subtree: true,
+	});
+
+
+	if (location.href.startsWith('https://moodle.htlstp.ac.at/blog/index.php') ||
+		location.href.startsWith('https://moodle.htlstp.ac.at/blog/edit.php'))
+	{
 		modifyHTML(modifyBlogPage([], false));
 
 		const posts = await getFeed();
 		const newVersion = await isNewVersionAvailable();
 
 		modifyBlogPage(posts, newVersion)();
-	} else if (
-		location.href.startsWith('https://moodle.htlstp.ac.at/blog/edit.php')
-	) {
-		modifyHTML(
-			modifyAddBlogPage(async (title, description) => {
-				console.log(title, description);
-
-
-				if (title.length > MAX_TITLE_LIMIT) {
-					alert(`Title is too long. Max length: 128, actual: ${title.length}`);
-					return;
-				}
-
-				if (description.length > MAX_CONTENT_LIMIT) {
-					alert(
-						`Description is too long. Max length: 2000, actual: ${description.length}`,
-					);
-					return;
-				}
-
-				try {
-					const userid = await MoodleApi.getInstance().fetchOwnUserId();
-					console.log(userid)
-
-					await addPost(await config, userid, title, description, []);
-
-					await MoodleApi.getInstance().addInterests(['moodle']);
-
-					location.href = 'https://moodle.htlstp.ac.at/blog/index.php';
-				} catch (e) {
-					alert(`Could not add post to blog. Reason: ${(e as Error).message}`);
-				}
-			}),
-		);
 	}
 
 	await setupKeys(await config);
