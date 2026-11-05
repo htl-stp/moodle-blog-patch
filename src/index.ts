@@ -10,6 +10,8 @@ import {PostChunkString, StoredPostTags} from "./tagStore";
 import {z} from "zod";
 import {openModal} from "./modals";
 import {generatePassphrase} from "./diceware";
+import {deriveKeypair} from "./crypto";
+import {p256_hasher} from "@noble/curves/nist.js";
 
 // required since types are now ["node", "bun"]
 declare const window: Window
@@ -252,11 +254,9 @@ async function getFeed() {
 }
 
 
-async function setupKeys() {
+async function setupKeys(config: Config) {
 	const userData = await MoodleApi.getInstance().getUserData();
 	const desc = userData.description;
-
-	const config = await Config.fromDescription(desc!);
 
 	if (config.data.pubKey) {
 		return;
@@ -305,10 +305,20 @@ async function setupKeys() {
 		navigator.clipboard.writeText(passPhraseField.textContent);
 	})
 
-	submitButton.addEventListener('click', e => {
+	submitButton.addEventListener('click', async (e) => {
 		if (retypeInput.value === phrase) {
-			// derive keys
-			// store keys
+			const keys = await deriveKeypair(phrase, userData.userid)
+
+			config.data.pubKey = keys.publicKeyB64u;
+			await MoodleApi.getInstance().setDescription(await config.serialize());
+
+			openModal({
+				title: "Setup complete!",
+				body:
+`<p>You're all set! The setup is complete.</p>
+<p>Here's your passphrase once more, in case you still didn't save it:</p>
+<code>${phrase}</code>`,
+			})
 
 			modal.destroy();
 		} else {
@@ -321,15 +331,13 @@ async function setupKeys() {
 
 
 
-let config: Config;
+let config = loadConfig();
 
 
 
 // main
 (async function () {
 	'use strict';
-
-	await setupKeys();
 
 	modifyHTML(addBlogLink);
 
@@ -347,7 +355,6 @@ let config: Config;
 			modifyAddBlogPage(async (title, description) => {
 				console.log(title, description);
 
-				config = await loadConfig();
 
 				if (title.length > MAX_TITLE_LIMIT) {
 					alert(`Title is too long. Max length: 128, actual: ${title.length}`);
@@ -365,7 +372,7 @@ let config: Config;
 					const userid = await MoodleApi.getInstance().fetchOwnUserId();
 					console.log(userid)
 
-					await addPost(config, userid, title, description, []);
+					await addPost(await config, userid, title, description, []);
 
 					await MoodleApi.getInstance().addInterests(['moodle']);
 
@@ -376,6 +383,8 @@ let config: Config;
 			}),
 		);
 	}
+
+	await setupKeys(await config);
 
 	// setupFetchIntercept();
 })();

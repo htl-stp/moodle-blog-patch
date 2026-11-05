@@ -121,9 +121,12 @@ export class MoodleApi {
 			'div[id="region-main"] > div > div > div[class="description"]',
 		)?.textContent;
 
+		const userid = Number(doc.querySelector('div[data-userid]')?.getAttribute('data-userid'));
+
 		return {
 			tags,
-			description
+			description,
+			userid
 		}
 	}
 
