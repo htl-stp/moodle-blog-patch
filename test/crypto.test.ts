@@ -6,5 +6,5 @@ test("signature can be verified", async () => {
 
     const signature = await sign("hello world", privateKey);
 
-    expect(await verify("hello world", signature, publicKey))
+    expect(await verify("hello world", signature, publicKey)).toBe(true);
 })
