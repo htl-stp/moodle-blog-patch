@@ -31,7 +31,7 @@ export const ConfigSchema = z.object({
 
 	comments: z.unknown().optional(),
 	likes: z.unknown().optional(),
-	pubKey: z.unknown().optional(),
+	pubKey: z.string().optional(),
 });
 
 export const LegacyPostSchema = z
