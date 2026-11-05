@@ -1,47 +1,39 @@
-const ALGO = { name: "ECDSA", namedCurve: "P-256" } as const;
+import { argon2id } from "hash-wasm";
+import { ed25519 } from "@noble/curves/ed25519.js";
 
-export async function generateKeys() {
-    return await crypto.subtle.generateKey(
-        { name: "ECDSA", namedCurve: "P-256" },
-        true,
-        ["sign", "verify"]
-    )
+const enc = new TextEncoder();
+
+const normalizePhrase = (p: string) =>
+    p.normalize("NFKD").trim().toLowerCase().split(/\s+/).join(" ");
+
+const toB64u = (b: Uint8Array) =>
+    btoa(String.fromCharCode(...b)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+const fromB64u = (s: string) =>
+    Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+
+export async function deriveKeypair(phrase: string, userId: number) {
+    const privateKey = await argon2id({
+        password: normalizePhrase(phrase),
+        salt: enc.encode(`moodle-blog-v1|${userId}`),
+        parallelism: 1,
+        iterations: 4,
+        memorySize: 131072, // KiB, so 128 MiB
+        hashLength: 32,
+        outputType: "binary",
+    });
+    const publicKey = ed25519.getPublicKey(privateKey);
+    return { privateKey, publicKey, publicKeyB64u: toB64u(publicKey) };
 }
 
-export async function exportKeys(publicKey: CryptoKey, privateKey: CryptoKey) {
-    const pk = await crypto.subtle.exportKey("jwk", publicKey);
-    const sk = await crypto.subtle.exportKey("jwk", privateKey);
-    return JSON.stringify({ pk, sk });
+export function sign(message: string, privateKey: Uint8Array): string {
+    return toB64u(ed25519.sign(enc.encode(message), privateKey));
 }
 
-export async function importKeys(json: string) {
-    const { pk, sk } = JSON.parse(json);
-    const publicKey = await crypto.subtle.importKey("jwk", pk, ALGO, true, ["verify"]);
-    const privateKey = await crypto.subtle.importKey("jwk", sk, ALGO, true, ["sign"]);
-    return { publicKey, privateKey };
+export function verify(message: string, sigB64u: string, publicKeyB64u: string): boolean {
+    try {
+        return ed25519.verify(fromB64u(sigB64u), enc.encode(message), fromB64u(publicKeyB64u));
+    } catch {
+        return false;
+    }
 }
-
-// Sign a string
-export async function sign(message: string, privateKey: CryptoKey): Promise<string> {
-    const data = new TextEncoder().encode(message);
-    const sig = await crypto.subtle.sign(
-        { name: "ECDSA", hash: "SHA-256" },
-        privateKey,
-        data
-    );
-    return btoa(String.fromCharCode(...new Uint8Array(sig)));
-}
-
-// Verify a signature
-export async function verify(message: string, signatureB64: string, publicKey: CryptoKey): Promise<boolean> {
-    const data = new TextEncoder().encode(message);
-    const sig = Uint8Array.from(atob(signatureB64), (c) => c.charCodeAt(0));
-    return crypto.subtle.verify(
-        { name: "ECDSA", hash: "SHA-256" },
-        publicKey,
-        sig,
-        data
-    );
-}
-
-

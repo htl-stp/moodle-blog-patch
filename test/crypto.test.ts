@@ -1,10 +1,16 @@
 import {test, expect} from "bun:test";
-import {generateKeys, sign, verify} from "../src/crypto";
+import {deriveKeypair, sign, verify} from "../src/crypto";
 
-test("signature can be verified", async () => {
-    const { publicKey, privateKey } = await generateKeys();
+const { publicKeyB64u, privateKey } = await deriveKeypair('very secure phrase', 42);
 
-    const signature = await sign("hello world", privateKey);
+test("signature can be verified", () => {
+    const signature = sign("hello world", privateKey);
 
-    expect(await verify("hello world", signature, publicKey)).toBe(true);
+    expect(verify("hello world", signature, publicKeyB64u)).toBe(true);
+})
+
+test("signature fails for tampered payload", () => {
+    const signature = sign("hello world", privateKey);
+
+    expect(verify("tampered payload", signature, publicKeyB64u)).toBe(false);
 })
