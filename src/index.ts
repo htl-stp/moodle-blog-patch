@@ -166,32 +166,6 @@ function parsePostPayload(
 
 	let badge = null;
 
-	if (json.v === 1) {
-		badge = {
-			text: 'Legacy Post (v0.0.1)',
-			backgroundColor: '#dd0000',
-			color: '#fff',
-		};
-	} else if (json.v === undefined) {
-		badge = {
-			text: 'Unverified Post (v0.0.2)',
-			backgroundColor: '#dd0000',
-			color: '#fff',
-		};
-	} else if (json.v === '0.0.3') {
-		badge = {
-			text: 'Unverified Post',
-			backgroundColor: '#dd0000',
-			color: '#fff',
-		};
-	} else {
-		badge = {
-			text: `Newer Version (${json.v})`,
-			backgroundColor: '#dd0000',
-			color: '#fff',
-		};
-	}
-
 	const verified = !!storedPost.signature &&
 		verify(storedPost.payload, storedPost.signature, public_key);
 
@@ -201,6 +175,8 @@ function parsePostPayload(
 			backgroundColor: '#00cc00',
 			color: '#fff',
 		};
+	} else {
+		return null;
 	}
 
 	let post: Post;
