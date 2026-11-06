@@ -138,5 +138,5 @@ export const CryptoKeyEnvelopeString = z.codec(z.string(), CryptoKeyEnvelope, {
             public_key
         })
     },
-    encode: (v) => `p:${v.user_id}:${v.name}${v.public_key}`
+    encode: (v) => `p:${v.user_id}:${v.name}:${v.public_key}`
 })

@@ -1,7 +1,15 @@
-import {test, expect} from "bun:test";
+import {test, expect, beforeAll} from "bun:test";
 import {deriveKeypair, sign, verify} from "../src/crypto";
 
-const { publicKeyB64u, privateKey } = await deriveKeypair('very secure phrase', 42);
+let publicKeyB64u: string;
+let privateKey: Uint8Array;
+
+beforeAll(async () => {
+    const keys = await deriveKeypair('very secure phrase', 42)
+
+    publicKeyB64u = keys.publicKeyB64u;
+    privateKey = keys.privateKey;
+})
 
 test("signature can be verified", () => {
     const signature = sign("hello world", privateKey);
