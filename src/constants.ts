@@ -1,8 +1,6 @@
-export const VERSION = '0.0.4';
-export const CONFIG_VERSION = '0.0.4';
-export const POST_VERSION = '0.0.4';
-
-export const READABLE_CONFIG_VERSIONS = ['0.0.2', '0.0.3', '0.0.4'];
+export const VERSION = '0.4.0';
+export const CONFIG_VERSION = '0.4.0';
+export const POST_VERSION = '0.4.0';
 
 export const MOODLE_DESCRIPTION_LIMIT = 5000;
 

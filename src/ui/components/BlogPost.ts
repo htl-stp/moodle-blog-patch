@@ -1,5 +1,5 @@
-import { FetchedPost } from '../types';
-import { escapeHtml, sanitizeHTML } from '../html';
+import { FetchedPost } from '../../domain/schemas';
+import { escapeHtml, sanitizeHTML } from '../sanitize';
 
 export function BlogPost(post: FetchedPost) {
 	const title = post.title;

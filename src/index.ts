@@ -1,28 +1,25 @@
-import { addBlogLink } from './html/addBlogLink';
-import { modifyAddBlogPage } from './html/modifyAddBlogPage';
-import { modifyBlogPage } from './html/modifyBlogPage';
-import { MoodleApi } from './moodleApi';
+import { addBlogLink } from './ui/addBlogLink';
+import { modifyAddBlogPage } from './ui/pages/modifyAddBlogPage';
+import { modifyBlogPage } from './ui/pages/modifyBlogPage';
+import { MoodleApi } from './moodle/MoodleApi';
 import {
 	FetchedPost,
 	Post,
 	PostSchema,
 	StoredPost,
 	StoredPostSchema,
-} from './types';
-import { Config } from './Config';
-import { isNewVersionAvailable } from './versionChecker';
+} from './domain/schemas';
 import { MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT, POST_VERSION } from './constants';
+import { z } from 'zod';
+import { openModal } from './ui/modal';
+import { generatePassphrase } from './crypto/passphrase';
+import { deriveKeypair, sign, verify } from './crypto/keypair';
+import { Storage } from './storage/Storage';
+import { PostChunkString, StoredPostTags } from './codec/postTags';
 import {
 	CryptoKeyEnvelope,
 	CryptoKeyEnvelopeString,
-	PostChunkString,
-	StoredPostTags,
-} from './tagStore';
-import { z } from 'zod';
-import { openModal } from './modals';
-import { generatePassphrase } from './diceware';
-import { deriveKeypair, sign, verify } from './crypto';
-import { VCache } from './VCache';
+} from './codec/keyEnvelope';
 
 // required since types are now ["node", "bun"]
 declare const window: Window;
@@ -42,33 +39,6 @@ function modifyHTML(fn: Function) {
 	if (fn()) {
 		observer.disconnect();
 	}
-}
-
-function setupFetchIntercept() {
-	const originalFetch = window.fetch;
-
-	window.fetch = async function (...args) {
-		const [resource, options] = args;
-
-		const request = resource instanceof Request ? resource : null;
-
-		const url = new URL(
-			request ? request.url : String(resource),
-			location.href,
-		);
-
-		// intercept code here (when needed)
-
-		const response = await originalFetch.apply(this, args);
-
-		return response;
-	};
-}
-
-async function saveConfig(config: Config) {
-	const str = await config.serialize();
-
-	await MoodleApi.getInstance().setDescription(str);
 }
 
 const generateNewPostId = () =>
@@ -110,22 +80,6 @@ async function addPost(
 	const postTags = StoredPostTags.encode(storedPost);
 
 	await MoodleApi.getInstance().addInterests(postTags);
-}
-
-async function loadConfig(): Promise<Config> {
-	const str = await MoodleApi.getInstance().getDescription();
-
-	try {
-		const config = await Config.fromDescription(str!);
-
-		return config;
-	} catch (e) {
-		const config = new Config({ posts: [] });
-
-		await saveConfig(config);
-
-		return config;
-	}
 }
 
 export function parsePostTags(strings: string[]) {
@@ -243,7 +197,7 @@ async function getFeed() {
 		}
 
 		try {
-			let key = VCache.getPinnedKeys()[userid];
+			let key = Storage.getPinnedKeys()[userid];
 			if (!key) {
 				const extracted = extractKeyEnvelopeFromTags(tags, userid);
 
@@ -294,7 +248,7 @@ async function pinKey(user_id: number, name: string, public_key: string) {
 
 	const str = CryptoKeyEnvelopeString.encode(envelope);
 
-	const wasSet = VCache.addPinnedKey(user_id, public_key);
+	const wasSet = Storage.addPinnedKey(user_id, public_key);
 
 	if (wasSet) {
 		MoodleApi.getInstance().addInterests([str]);
@@ -431,7 +385,7 @@ async function setupKeys() {
 			}
 
 			try {
-				const userid = await MoodleApi.getInstance().fetchOwnUserId();
+				const userid = (await MoodleApi.getInstance().getUserData()).userid;
 				console.log(userid);
 
 				await addPost(userid, title, description, [], keys.privateKey);
@@ -454,12 +408,11 @@ async function setupKeys() {
 		location.href.startsWith('https://moodle.htlstp.ac.at/blog/index.php') ||
 		location.href.startsWith('https://moodle.htlstp.ac.at/blog/edit.php')
 	) {
-		modifyHTML(modifyBlogPage([], false));
+		modifyHTML(modifyBlogPage([]));
 
 		const posts = await getFeed();
-		const newVersion = await isNewVersionAvailable();
 
-		modifyBlogPage(posts, newVersion)();
+		modifyBlogPage(posts)();
 	}
 
 	await setupKeys();

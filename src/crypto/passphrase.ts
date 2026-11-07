@@ -1,11 +1,9 @@
-import wordlist from '../assets/eff_large_wordlist.txt' with { type: 'text' };
+import wordlist from '../../assets/eff_large_wordlist.txt' with { type: 'text' };
 
-function loadWordlist() {
-	return wordlist
-		.trim()
-		.split('\n')
-		.map((l) => l.split('\t')[1]!);
-}
+const WORDS = wordlist
+	.trim()
+	.split('\n')
+	.map((l) => l.split('\t')[1]!);
 
 function randomIndex(n: number) {
 	// rejection sampling because of modulo bias
@@ -18,7 +16,7 @@ function randomIndex(n: number) {
 }
 
 export function generatePassphrase(words = 5) {
-	const list = loadWordlist();
+	const list = WORDS;
 
 	return Array.from(
 		{ length: words },

@@ -1,21 +1,11 @@
 import { argon2id } from 'hash-wasm';
 import { ed25519 } from '@noble/curves/ed25519.js';
+import { fromB64u, toB64u } from './base64url';
 
 const enc = new TextEncoder();
 
 const normalizePhrase = (p: string) =>
 	p.normalize('NFKD').trim().toLowerCase().split(/\s+/).join(' ');
-
-const toB64u = (b: Uint8Array) =>
-	btoa(String.fromCharCode(...b))
-		.replace(/\+/g, '-')
-		.replace(/\//g, '_')
-		.replace(/=+$/, '');
-
-const fromB64u = (s: string) =>
-	Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), (c) =>
-		c.charCodeAt(0),
-	);
 
 export async function deriveKeypair(phrase: string, userId: number) {
 	const privateKey = await argon2id({

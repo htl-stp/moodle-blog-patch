@@ -1,8 +1,9 @@
 import { test, expect } from 'bun:test';
-import { CryptoKeyEnvelopeString, StoredPostTags } from '../src/tagStore';
-import { Post } from '../src/types';
+import { Post } from '../src/domain/schemas';
 import { POST_VERSION } from '../src/constants';
-import { deriveKeypair } from '../src/crypto';
+import { deriveKeypair } from '../src/crypto/keypair';
+import { StoredPostTags } from '../src/codec/postTags';
+import { CryptoKeyEnvelopeString } from '../src/codec/keyEnvelope';
 
 test('post chunk roundtrip works (small post)', () => {
 	const postPayload = JSON.stringify({

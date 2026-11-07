@@ -1,5 +1,5 @@
-import { SubmitHook } from '../types';
-import { MoodleModal, openModal } from '../modals';
+import { SubmitHook } from '../../domain/schemas';
+import { MoodleModal, openModal } from '../modal';
 
 let modal: Promise<MoodleModal>;
 

@@ -1,4 +1,4 @@
-import { StoredPost } from './types';
+import { StoredPost } from '../domain/schemas';
 
 type TamperMonkeyValue = null | string | object | undefined | boolean | number;
 
@@ -9,35 +9,11 @@ declare function GM_getValue(
 ): TamperMonkeyValue;
 declare function GM_deleteValue(key: string): void;
 
-export class VCache {
+export class Storage {
 	private constructor() {}
-
-	static getCachedPosts(): StoredPost[] {
-		return GM_getValue('cached_posts', []) as StoredPost[];
-	}
-
-	static addCachedPost(storedPost: StoredPost) {
-		const posts = VCache.getCachedPosts();
-
-		posts.push(storedPost);
-
-		VCache.setCachedPosts(posts);
-	}
-
-	static setCachedPosts(storedPosts: StoredPost[]) {
-		GM_setValue('cached_posts', storedPosts);
-	}
 
 	static getPinnedKeys(): Record<number, string> {
 		return GM_getValue('pinned_keys', {}) as Record<number, string>;
-	}
-
-	static setPinnedKey(userId: number, pinnedKey: string): void {
-		const keys = VCache.getPinnedKeys();
-
-		keys[userId] = pinnedKey;
-
-		VCache.setPinnedKeys(keys);
 	}
 
 	/**
@@ -47,7 +23,7 @@ export class VCache {
 	 * @return true if the key was set, false if it already existed.
 	 */
 	static addPinnedKey(userId: number, pinnedKey: string): boolean {
-		const keys = VCache.getPinnedKeys();
+		const keys = Storage.getPinnedKeys();
 
 		if (keys[userId]) {
 			return false;
@@ -55,7 +31,7 @@ export class VCache {
 
 		keys[userId] = pinnedKey;
 
-		VCache.setPinnedKeys(keys);
+		Storage.setPinnedKeys(keys);
 
 		return true;
 	}

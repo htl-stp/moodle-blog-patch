@@ -1,12 +1,9 @@
 import DOMPurify from 'dompurify';
 
-export function escapeHtml(value: string): string {
-	return value
-		.replaceAll('&', '&amp;')
-		.replaceAll('<', '&lt;')
-		.replaceAll('>', '&gt;')
-		.replaceAll('"', '&quot;')
-		.replaceAll("'", '&#39;');
+export function escapeHtml(text: string): string {
+	const el = document.createElement('div');
+	el.textContent = text;
+	return el.innerHTML;
 }
 
 export function sanitizeHTML(html: string): string {

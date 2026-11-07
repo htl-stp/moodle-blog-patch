@@ -1,4 +1,4 @@
-import { MOODLE_DESCRIPTION_LIMIT } from './constants';
+import { MOODLE_DESCRIPTION_LIMIT } from '../constants';
 
 export class MoodleApi {
 	private static instance = new MoodleApi();
@@ -133,35 +133,6 @@ export class MoodleApi {
 			userid,
 			name,
 		};
-	}
-
-	async getTags(userId?: number) {
-		const res = await fetch(
-			'https://moodle.htlstp.ac.at/user/profile.php' +
-				(userId ? `?id=${userId}` : ''),
-		);
-
-		const html = await res.text();
-
-		const doc = new DOMParser().parseFromString(html, 'text/html');
-
-		const els = Array.from(doc.querySelectorAll('div.tag_list > ul > li > a'));
-
-		const tags = els.map((el) => el.textContent.trim());
-
-		return tags;
-	}
-
-	async fetchOwnUserId() {
-		const res = await fetch('https://moodle.htlstp.ac.at/user/profile.php');
-
-		const html = await res.text();
-
-		const doc = new DOMParser().parseFromString(html, 'text/html');
-
-		return Number(
-			doc.querySelector('div[data-userid]')?.getAttribute('data-userid'),
-		);
 	}
 
 	async getEvidence() {

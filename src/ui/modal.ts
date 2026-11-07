@@ -1,3 +1,5 @@
+import { escapeHtml } from './sanitize';
+
 declare const unsafeWindow: (Window & typeof globalThis) | undefined;
 
 export interface MoodleModal {
@@ -78,11 +80,6 @@ async function loadAmd<T extends any[]>(deps: string[]): Promise<T> {
 			reject,
 		);
 	});
-}
-function escapeHtml(text: string): string {
-	const el = document.createElement('div');
-	el.textContent = text;
-	return el.innerHTML;
 }
 
 function renderButtons(buttons: ModalButton[]): string {

@@ -1,5 +1,5 @@
 import { test, expect, beforeAll } from 'bun:test';
-import { deriveKeypair, sign, verify } from '../src/crypto';
+import { deriveKeypair, sign, verify } from '../src/crypto/keypair';
 
 let publicKeyB64u: string;
 let privateKey: Uint8Array;
