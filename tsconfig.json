@@ -9,7 +9,7 @@
 		// See also https://aka.ms/tsconfig/module
 		"module": "esnext",
 		"target": "esnext",
-		"types": ["bun","node"],
+		"types": ["bun", "node"],
 		// For nodejs:
 		// "lib": ["esnext"],
 		// "types": ["node"],
@@ -40,5 +40,5 @@
 		"noUncheckedSideEffectImports": true,
 		"moduleDetection": "force",
 		"skipLibCheck": true
-	},
+	}
 }

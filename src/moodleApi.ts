@@ -1,5 +1,5 @@
 import { MOODLE_DESCRIPTION_LIMIT } from './constants';
- import {PostChunkString} from "./tagStore";
+import { PostChunkString } from './tagStore';
 
 export class MoodleApi {
 	private static instance = new MoodleApi();
@@ -100,19 +100,20 @@ export class MoodleApi {
 	async getUserData(userId?: number) {
 		const res = await fetch(
 			'https://moodle.htlstp.ac.at/user/profile.php' +
-			(userId ? `?id=${userId}` : ''),
+				(userId ? `?id=${userId}` : ''),
 		);
 
 		const html = await res.text();
 
 		const doc = new DOMParser().parseFromString(html, 'text/html');
 
-
 		const tags: string[] = [];
 		{
-			const els = Array.from(doc.querySelectorAll("div.tag_list > ul > li > a"))
+			const els = Array.from(
+				doc.querySelectorAll('div.tag_list > ul > li > a'),
+			);
 
-			const _tags = els.map(el => el.textContent.trim());
+			const _tags = els.map((el) => el.textContent.trim());
 
 			tags.push(..._tags);
 		}
@@ -121,31 +122,33 @@ export class MoodleApi {
 			'div[id="region-main"] > div > div > div[class="description"]',
 		)?.textContent;
 
-		const userid = Number(doc.querySelector('div[data-userid]')?.getAttribute('data-userid'));
+		const userid = Number(
+			doc.querySelector('div[data-userid]')?.getAttribute('data-userid'),
+		);
 
-		const name = doc.querySelector("title")!.textContent.split(":")[0]!;
+		const name = doc.querySelector('title')!.textContent.split(':')[0]!;
 
 		return {
 			tags,
 			description,
 			userid,
-			name
-		}
+			name,
+		};
 	}
 
 	async getTags(userId?: number) {
 		const res = await fetch(
 			'https://moodle.htlstp.ac.at/user/profile.php' +
-			(userId ? `?id=${userId}` : ''),
+				(userId ? `?id=${userId}` : ''),
 		);
 
 		const html = await res.text();
 
 		const doc = new DOMParser().parseFromString(html, 'text/html');
 
-		const els = Array.from(doc.querySelectorAll("div.tag_list > ul > li > a"))
+		const els = Array.from(doc.querySelectorAll('div.tag_list > ul > li > a'));
 
-		const tags = els.map(el => el.textContent.trim());
+		const tags = els.map((el) => el.textContent.trim());
 
 		return tags;
 	}
@@ -157,7 +160,9 @@ export class MoodleApi {
 
 		const doc = new DOMParser().parseFromString(html, 'text/html');
 
-		return Number(doc.querySelector('div[data-userid]')?.getAttribute('data-userid'));
+		return Number(
+			doc.querySelector('div[data-userid]')?.getAttribute('data-userid'),
+		);
 	}
 
 	async getEvidence() {
@@ -199,7 +204,7 @@ export class MoodleApi {
 			id: Number(el.getAttribute('href')?.split('?id=')[1]),
 		}));
 
-		if (doc.querySelector("#region-main .nextpage") !== null) {
+		if (doc.querySelector('#region-main .nextpage') !== null) {
 			users.push(...(await this.getInterestedUsersForTag(tag, page + 1)));
 		}
 
@@ -207,5 +212,4 @@ export class MoodleApi {
 
 		return users;
 	}
-
 }

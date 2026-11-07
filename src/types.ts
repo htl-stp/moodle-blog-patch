@@ -77,4 +77,8 @@ export type FetchedPost = Post & {
 
 export type ConfigData = z.infer<typeof ConfigSchema>;
 
-export type SubmitHook = (title: string, description: string, passphrase: string) => void;
+export type SubmitHook = (
+	title: string,
+	description: string,
+	passphrase: string,
+) => void;

@@ -2,20 +2,31 @@ import { addBlogLink } from './html/addBlogLink';
 import { modifyAddBlogPage } from './html/modifyAddBlogPage';
 import { modifyBlogPage } from './html/modifyBlogPage';
 import { MoodleApi } from './moodleApi';
-import {FetchedPost, Post, PostSchema, StoredPost, StoredPostSchema} from './types';
+import {
+	FetchedPost,
+	Post,
+	PostSchema,
+	StoredPost,
+	StoredPostSchema,
+} from './types';
 import { Config } from './Config';
 import { isNewVersionAvailable } from './versionChecker';
 import { MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT, POST_VERSION } from './constants';
-import {CryptoKeyEnvelope, CryptoKeyEnvelopeString, PostChunkString, StoredPostTags} from "./tagStore";
-import {z} from "zod";
-import {openModal} from "./modals";
-import {generatePassphrase} from "./diceware";
-import {deriveKeypair, sign, verify} from "./crypto";
-import {p256_hasher} from "@noble/curves/nist.js";
-import {VCache} from "./VCache";
+import {
+	CryptoKeyEnvelope,
+	CryptoKeyEnvelopeString,
+	PostChunkString,
+	StoredPostTags,
+} from './tagStore';
+import { z } from 'zod';
+import { openModal } from './modals';
+import { generatePassphrase } from './diceware';
+import { deriveKeypair, sign, verify } from './crypto';
+import { p256_hasher } from '@noble/curves/nist.js';
+import { VCache } from './VCache';
 
 // required since types are now ["node", "bun"]
-declare const window: Window
+declare const window: Window;
 
 function modifyHTML(fn: Function) {
 	const observer = new MutationObserver(() => {
@@ -71,13 +82,13 @@ async function addPost(
 	title: string,
 	content: string,
 	tags: string[],
-	privateKey: Uint8Array
+	privateKey: Uint8Array,
 ) {
 	const userData = await MoodleApi.getInstance().getUserData();
 
 	const postIds = parsePostTags(userData.tags)
-		.map(p=> PostSchema.parse(JSON.parse(p.payload)))
-		.map(p => p.id);
+		.map((p) => PostSchema.parse(JSON.parse(p.payload)))
+		.map((p) => p.id);
 
 	let id: string;
 	do {
@@ -162,13 +173,14 @@ function parsePostPayload(
 	storedPost: StoredPost,
 	authorId: number,
 	author: string,
-	public_key: string
+	public_key: string,
 ): FetchedPost | null {
 	const json = JSON.parse(storedPost.payload);
 
 	let badge = null;
 
-	const verified = !!storedPost.signature &&
+	const verified =
+		!!storedPost.signature &&
 		verify(storedPost.payload, storedPost.signature, public_key);
 
 	if (verified) {
@@ -199,7 +211,7 @@ function parsePostPayload(
 }
 
 function extractKeyEnvelopeFromTags(tags: string[], userId: number) {
-	tags = tags.filter(t => t.startsWith('p:'));
+	tags = tags.filter((t) => t.startsWith('p:'));
 
 	for (const tag of tags) {
 		try {
@@ -213,17 +225,19 @@ function extractKeyEnvelopeFromTags(tags: string[], userId: number) {
 		} catch (_) {}
 	}
 
-	throw new Error("No public key found.")
+	throw new Error('No public key found.');
 }
 
 async function getFeed() {
-	const users = await MoodleApi.getInstance().getInterestedUsersForTag('moodle');
+	const users =
+		await MoodleApi.getInstance().getInterestedUsersForTag('moodle');
 	console.log(users);
 
 	const posts: FetchedPost[] = [];
 
 	for (const user of users) {
-		const {tags, description, userid} = await MoodleApi.getInstance().getUserData(user.id);
+		const { tags, description, userid } =
+			await MoodleApi.getInstance().getUserData(user.id);
 
 		if (!description) {
 			continue;
@@ -237,10 +251,10 @@ async function getFeed() {
 				key = extracted.public_key;
 
 				pinKey(extracted.user_id, extracted.name, extracted.public_key);
-			};
+			}
 
 			if (!key) {
-				throw new Error("User has no public key");
+				throw new Error('User has no public key');
 			}
 
 			let fetchedPosts: FetchedPost[] = [];
@@ -258,9 +272,7 @@ async function getFeed() {
 
 			posts.push(...fetchedPosts);
 
-			console.log(
-				`received ${fetchedPosts.length} posts from ${user.user}`,
-			);
+			console.log(`received ${fetchedPosts.length} posts from ${user.user}`);
 		} catch (e) {
 			console.log(`Error for: ${user.user}`);
 			console.error(e);
@@ -276,8 +288,10 @@ async function getFeed() {
 
 async function pinKey(user_id: number, name: string, public_key: string) {
 	const envelope = CryptoKeyEnvelope.parse({
-		name, public_key, user_id
-	})
+		name,
+		public_key,
+		user_id,
+	});
 
 	const str = CryptoKeyEnvelopeString.encode(envelope);
 
@@ -287,7 +301,6 @@ async function pinKey(user_id: number, name: string, public_key: string) {
 		MoodleApi.getInstance().addInterests([str]);
 	}
 }
-
 
 async function setupKeys() {
 	const userData = await MoodleApi.getInstance().getUserData();
@@ -305,9 +318,8 @@ async function setupKeys() {
 	}
 
 	const modal = await openModal({
-		title: "Key Setup",
-		body:
-`
+		title: 'Key Setup',
+		body: `
 	<p>To be able to use the moodle blog, you need a passphrase first.</p>
 	<p>If you ever lose this passphrase, you will <strong>NEVER</strong> be able to post again!</p>
 	
@@ -325,68 +337,64 @@ async function setupKeys() {
 	
 	<button id="btn-submit">Submit</button>
 `,
-		large: true
-	})
+		large: true,
+	});
 
-	let phrase = generatePassphrase()
+	let phrase = generatePassphrase();
 
 	const passPhraseField = document.querySelector('#passphrase')!;
 	const regenerateButton = document.querySelector('#btn-regenerate')!;
 	const copyButton = document.querySelector('#btn-copy')!;
 	const submitButton = document.querySelector('#btn-submit')!;
-	const retypeInput = document.querySelector('#input-retype')! as HTMLInputElement;
+	const retypeInput = document.querySelector(
+		'#input-retype',
+	)! as HTMLInputElement;
 
 	passPhraseField.textContent = phrase;
 
-	regenerateButton.addEventListener('click', e => {
+	regenerateButton.addEventListener('click', (e) => {
 		phrase = generatePassphrase();
 		passPhraseField.textContent = phrase;
-	})
+	});
 
-	copyButton.addEventListener('click', e => {
+	copyButton.addEventListener('click', (e) => {
 		navigator.clipboard.writeText(passPhraseField.textContent);
-	})
+	});
 
 	submitButton.addEventListener('click', async (e) => {
 		if (retypeInput.value === phrase) {
-			const keys = await deriveKeypair(phrase, userData.userid)
+			const keys = await deriveKeypair(phrase, userData.userid);
 
-			console.log("Add crypto key")
-			await MoodleApi.getInstance().addInterests([CryptoKeyEnvelopeString.encode({
-				public_key: keys.publicKeyB64u,
-				user_id: userData.userid,
-				name: userData.name
-			})]);
+			console.log('Add crypto key');
+			await MoodleApi.getInstance().addInterests([
+				CryptoKeyEnvelopeString.encode({
+					public_key: keys.publicKeyB64u,
+					user_id: userData.userid,
+					name: userData.name,
+				}),
+			]);
 
 			openModal({
-				title: "Setup complete!",
-				body:
-`<p>You're all set! The setup is complete.</p>
+				title: 'Setup complete!',
+				body: `<p>You're all set! The setup is complete.</p>
 <p>Here's your passphrase once more, in case you still didn't save it:</p>
 <code>${phrase}</code>`,
-			})
+			});
 
 			modal.destroy();
 		} else {
-			alert("Wrong passphrase!");
+			alert('Wrong passphrase!');
 		}
-	})
+	});
 }
 
-
-
-
-
 // let config = loadConfig();
-
-
 
 // main
 (async function () {
 	'use strict';
 
 	modifyHTML(addBlogLink);
-
 
 	const observer = new MutationObserver(() => {
 		modifyAddBlogPage(async (title, description, passphrase) => {
@@ -398,7 +406,10 @@ async function setupKeys() {
 
 			// FIXME: there might be errors here
 			try {
-				if (keys.publicKeyB64u !== extractKeyEnvelopeFromTags(userData.tags, userData.userid).public_key) {
+				if (
+					keys.publicKeyB64u !==
+					extractKeyEnvelopeFromTags(userData.tags, userData.userid).public_key
+				) {
 					alert('Wrong passphrase!');
 					return;
 				}
@@ -407,7 +418,9 @@ async function setupKeys() {
 			}
 
 			if (title.length > MAX_TITLE_LIMIT) {
-				alert(`Title is too long. Max length: ${MAX_TITLE_LIMIT}, actual: ${title.length}`);
+				alert(
+					`Title is too long. Max length: ${MAX_TITLE_LIMIT}, actual: ${title.length}`,
+				);
 				return;
 			}
 
@@ -420,7 +433,7 @@ async function setupKeys() {
 
 			try {
 				const userid = await MoodleApi.getInstance().fetchOwnUserId();
-				console.log(userid)
+				console.log(userid);
 
 				await addPost(userid, title, description, [], keys.privateKey);
 
@@ -438,10 +451,10 @@ async function setupKeys() {
 		subtree: true,
 	});
 
-
-	if (location.href.startsWith('https://moodle.htlstp.ac.at/blog/index.php') ||
-		location.href.startsWith('https://moodle.htlstp.ac.at/blog/edit.php'))
-	{
+	if (
+		location.href.startsWith('https://moodle.htlstp.ac.at/blog/index.php') ||
+		location.href.startsWith('https://moodle.htlstp.ac.at/blog/edit.php')
+	) {
 		modifyHTML(modifyBlogPage([], false));
 
 		const posts = await getFeed();

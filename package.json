@@ -6,8 +6,8 @@
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"build": "bun build src/index.ts --banner=\"$(cat banner.txt)\" --outfile dist/moodleblog.user.js --target browser --format=iife --minify",
-		"typecheck": "bun check",
-		"fmt": "bun fmt --use-tabs --single-quote"
+		"fmt": "bun fmt --use-tabs --single-quote",
+		"check": "bun test && bun check && bun fmt -c"
 	},
 	"author": "daftvoid",
 	"license": "GPL-3.0-or-later",
