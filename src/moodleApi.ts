@@ -123,10 +123,13 @@ export class MoodleApi {
 
 		const userid = Number(doc.querySelector('div[data-userid]')?.getAttribute('data-userid'));
 
+		const name = doc.querySelector("title")!.textContent.split(":")[0]!;
+
 		return {
 			tags,
 			description,
-			userid
+			userid,
+			name
 		}
 	}
 

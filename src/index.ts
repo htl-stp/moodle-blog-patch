@@ -6,12 +6,13 @@ import {FetchedPost, Post, PostSchema, StoredPost, StoredPostSchema} from './typ
 import { Config } from './Config';
 import { isNewVersionAvailable } from './versionChecker';
 import { MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT, POST_VERSION } from './constants';
-import {PostChunkString, StoredPostTags} from "./tagStore";
+import {CryptoKeyEnvelope, CryptoKeyEnvelopeString, PostChunkString, StoredPostTags} from "./tagStore";
 import {z} from "zod";
 import {openModal} from "./modals";
 import {generatePassphrase} from "./diceware";
 import {deriveKeypair, sign, verify} from "./crypto";
 import {p256_hasher} from "@noble/curves/nist.js";
+import {VCache} from "./VCache";
 
 // required since types are now ["node", "bun"]
 declare const window: Window
@@ -66,16 +67,17 @@ const generateNewPostId = () =>
 	).join('');
 
 async function addPost(
-	config: Config,
 	userid: number,
 	title: string,
 	content: string,
 	tags: string[],
 	privateKey: Uint8Array
 ) {
-	const postIds = config.data.posts
-		.map((p) => PostSchema.parse(JSON.parse(p.payload)))
-		.map((p) => p.id);
+	const userData = await MoodleApi.getInstance().getUserData();
+
+	const postIds = parsePostTags(userData.tags)
+		.map(p=> PostSchema.parse(JSON.parse(p.payload)))
+		.map(p => p.id);
 
 	let id: string;
 	do {
@@ -196,6 +198,24 @@ function parsePostPayload(
 	};
 }
 
+function extractKeyEnvelopeFromTags(tags: string[], userId: number) {
+	tags = tags.filter(t => t.startsWith('p:'));
+
+	for (const tag of tags) {
+		try {
+			const decoded = CryptoKeyEnvelopeString.decode(tag);
+
+			if (decoded.user_id !== userId) {
+				continue;
+			}
+
+			return decoded;
+		} catch (_) {}
+	}
+
+	throw new Error("No public key found.")
+}
+
 async function getFeed() {
 	const users = await MoodleApi.getInstance().getInterestedUsersForTag('moodle');
 	console.log(users);
@@ -203,23 +223,30 @@ async function getFeed() {
 	const posts: FetchedPost[] = [];
 
 	for (const user of users) {
-		const {tags, description} = await MoodleApi.getInstance().getUserData(user.id);
+		const {tags, description, userid} = await MoodleApi.getInstance().getUserData(user.id);
 
 		if (!description) {
 			continue;
 		}
 
 		try {
-			const config: Config = await Config.fromDescription(description);
+			let key = VCache.getPinnedKeys()[userid];
+			if (!key) {
+				const extracted = extractKeyEnvelopeFromTags(tags, userid);
 
-			if (!config.data.pubKey) {
+				key = extracted.public_key;
+
+				pinKey(extracted.user_id, extracted.name, extracted.public_key);
+			};
+
+			if (!key) {
 				throw new Error("User has no public key");
 			}
 
 			let fetchedPosts: FetchedPost[] = [];
 
-			fetchedPosts = [...config.data.posts, ...parsePostTags(tags)]
-				.map((p) => parsePostPayload(p, user.id, user.user, config.data.pubKey!))
+			fetchedPosts = parsePostTags(tags)
+				.map((p) => parsePostPayload(p, user.id, user.user, key))
 				.filter((p) => p !== null);
 
 			fetchedPosts = fetchedPosts.filter((p) => {
@@ -232,7 +259,7 @@ async function getFeed() {
 			posts.push(...fetchedPosts);
 
 			console.log(
-				`received ${config.data.posts.length} posts from ${user.user}`,
+				`received ${fetchedPosts.length} posts from ${user.user}`,
 			);
 		} catch (e) {
 			console.log(`Error for: ${user.user}`);
@@ -247,12 +274,33 @@ async function getFeed() {
 	return posts;
 }
 
+async function pinKey(user_id: number, name: string, public_key: string) {
+	const envelope = CryptoKeyEnvelope.parse({
+		name, public_key, user_id
+	})
 
-async function setupKeys(config: Config) {
+	const str = CryptoKeyEnvelopeString.encode(envelope);
+
+	const wasSet = VCache.addPinnedKey(user_id, public_key);
+
+	if (wasSet) {
+		MoodleApi.getInstance().addInterests([str]);
+	}
+}
+
+
+async function setupKeys() {
 	const userData = await MoodleApi.getInstance().getUserData();
 	const desc = userData.description;
 
-	if (config.data.pubKey) {
+	let key;
+	try {
+		const envelope = extractKeyEnvelopeFromTags(userData.tags, userData.userid);
+
+		key = envelope.public_key;
+	} catch (_) {}
+
+	if (key) {
 		return;
 	}
 
@@ -303,8 +351,12 @@ async function setupKeys(config: Config) {
 		if (retypeInput.value === phrase) {
 			const keys = await deriveKeypair(phrase, userData.userid)
 
-			config.data.pubKey = keys.publicKeyB64u;
-			await MoodleApi.getInstance().setDescription(await config.serialize());
+			console.log("Add crypto key")
+			await MoodleApi.getInstance().addInterests([CryptoKeyEnvelopeString.encode({
+				public_key: keys.publicKeyB64u,
+				user_id: userData.userid,
+				name: userData.name
+			})]);
 
 			openModal({
 				title: "Setup complete!",
@@ -325,7 +377,7 @@ async function setupKeys(config: Config) {
 
 
 
-let config = loadConfig();
+// let config = loadConfig();
 
 
 
@@ -344,7 +396,8 @@ let config = loadConfig();
 
 			const keys = await deriveKeypair(passphrase, userData.userid);
 
-			if (keys.publicKeyB64u !== (await config).data.pubKey) {
+			// FIXME: there might be errors here
+			if (keys.publicKeyB64u !== extractKeyEnvelopeFromTags(userData.tags, userData.userid).public_key) {
 				alert('Wrong passphrase!');
 				return;
 			}
@@ -356,7 +409,7 @@ let config = loadConfig();
 
 			if (description.length > MAX_CONTENT_LIMIT) {
 				alert(
-					`Description is too long. Max length: 2000, actual: ${description.length}`,
+					`Description is too long. Max length: 1200, actual: ${description.length}`,
 				);
 				return;
 			}
@@ -365,7 +418,7 @@ let config = loadConfig();
 				const userid = await MoodleApi.getInstance().fetchOwnUserId();
 				console.log(userid)
 
-				await addPost(await config, userid, title, description, [], keys.privateKey);
+				await addPost(userid, title, description, [], keys.privateKey);
 
 				await MoodleApi.getInstance().addInterests(['moodle']);
 
@@ -393,7 +446,7 @@ let config = loadConfig();
 		modifyBlogPage(posts, newVersion)();
 	}
 
-	await setupKeys(await config);
+	await setupKeys();
 
 	// setupFetchIntercept();
 })();
