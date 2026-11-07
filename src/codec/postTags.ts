@@ -1,9 +1,9 @@
-import { PostSchema, StoredPostSchema } from '../domain/schemas';
+import { PostBodySchema, SignedPostSchema } from '../domain/schemas';
 import { z } from 'zod';
 
 const MAX_STRING_LENGTH = 255;
 
-export const StoredPostTags = z.codec(z.array(z.string()), StoredPostSchema, {
+export const SignedPostTags = z.codec(z.array(z.string()), SignedPostSchema, {
 	decode: (list, ctx) => {
 		const fail = (message: string) => {
 			ctx.issues.push({ code: 'custom', message, input: list });
@@ -52,7 +52,7 @@ export const StoredPostTags = z.codec(z.array(z.string()), StoredPostSchema, {
 		}
 	},
 	encode: (value) => {
-		const post = PostSchema.parse(JSON.parse(value.payload));
+		const post = PostBodySchema.parse(JSON.parse(value.payload));
 		const user_id = post.userid;
 		const blog_id = post.id;
 

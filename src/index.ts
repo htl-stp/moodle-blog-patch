@@ -3,11 +3,11 @@ import { modifyAddBlogPage } from './ui/pages/modifyAddBlogPage';
 import { modifyBlogPage } from './ui/pages/modifyBlogPage';
 import { MoodleApi } from './moodle/MoodleApi';
 import {
-	FetchedPost,
 	Post,
-	PostSchema,
-	StoredPost,
-	StoredPostSchema,
+	PostBody,
+	PostBodySchema,
+	SignedPost,
+	SignedPostSchema,
 } from './domain/schemas';
 import { MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT, POST_VERSION } from './constants';
 import { z } from 'zod';
@@ -15,11 +15,12 @@ import { openModal } from './ui/modal';
 import { generatePassphrase } from './crypto/passphrase';
 import { deriveKeypair, sign, verify } from './crypto/keypair';
 import { Storage } from './storage/Storage';
-import { PostChunkString, StoredPostTags } from './codec/postTags';
+import { PostChunkString, SignedPostTags } from './codec/postTags';
 import {
 	CryptoKeyEnvelope,
 	CryptoKeyEnvelopeString,
 } from './codec/keyEnvelope';
+import { openPost, signPost } from './domain/post';
 
 // required since types are now ["node", "bun"]
 declare const window: Window;
@@ -56,7 +57,7 @@ async function addPost(
 	const userData = await MoodleApi.getInstance().getUserData();
 
 	const postIds = parsePostTags(userData.tags)
-		.map((p) => PostSchema.parse(JSON.parse(p.payload)))
+		.map((p) => PostBodySchema.parse(JSON.parse(p.payload)))
 		.map((p) => p.id);
 
 	let id: string;
@@ -64,7 +65,7 @@ async function addPost(
 		id = generateNewPostId();
 	} while (postIds.includes(id));
 
-	const p: Post = {
+	const p: PostBody = {
 		v: POST_VERSION,
 		userid: userid,
 		id: id,
@@ -74,10 +75,9 @@ async function addPost(
 		created: Date.now(),
 	};
 
-	const storedPost: StoredPost = { payload: JSON.stringify(p) };
-	storedPost.signature = sign(storedPost.payload, privateKey);
+	const signedPost = signPost(p, privateKey);
 
-	const postTags = StoredPostTags.encode(storedPost);
+	const postTags = SignedPostTags.encode(signedPost);
 
 	await MoodleApi.getInstance().addInterests(postTags);
 }
@@ -99,16 +99,16 @@ export function parsePostTags(strings: string[]) {
 	}
 
 	// decode each group into a StoredPost, then parse the payload
-	const posts: z.output<typeof StoredPostSchema>[] = [];
+	const posts: z.output<typeof SignedPostSchema>[] = [];
 
 	for (const [key, list] of groups) {
-		const stored = StoredPostTags.safeDecode(list);
+		const stored = SignedPostTags.safeDecode(list);
 		if (!stored.success) {
 			console.warn(`Skipping ${key}:`, stored.error.message);
 			continue;
 		}
 
-		const post = PostSchema.safeParse(JSON.parse(stored.data.payload));
+		const post = PostBodySchema.safeParse(JSON.parse(stored.data.payload));
 		if (!post.success) {
 			console.warn(`Skipping ${key}: invalid payload`);
 			continue;
@@ -120,47 +120,6 @@ export function parsePostTags(strings: string[]) {
 	console.log(posts);
 
 	return posts;
-}
-
-function parsePostPayload(
-	storedPost: StoredPost,
-	authorId: number,
-	author: string,
-	public_key: string,
-): FetchedPost | null {
-	const json = JSON.parse(storedPost.payload);
-
-	let badge = null;
-
-	const verified =
-		!!storedPost.signature &&
-		verify(storedPost.payload, storedPost.signature, public_key);
-
-	if (verified) {
-		badge = {
-			text: `Verified Post`,
-			backgroundColor: '#00cc00',
-			color: '#fff',
-		};
-	} else {
-		return null;
-	}
-
-	let post: Post;
-	const safe = PostSchema.safeParse(json);
-
-	if (safe.success) {
-		post = safe.data;
-	} else {
-		return null;
-	}
-
-	return {
-		...post,
-		author,
-		authorId,
-		badge: badge,
-	};
 }
 
 function extractKeyEnvelopeFromTags(tags: string[], userId: number) {
@@ -186,10 +145,10 @@ async function getFeed() {
 		await MoodleApi.getInstance().getInterestedUsersForTag('moodle');
 	console.log(users);
 
-	const posts: FetchedPost[] = [];
+	const posts: Post[] = [];
 
 	for (const user of users) {
-		const { tags, description, userid } =
+		const { tags, description, userid, name } =
 			await MoodleApi.getInstance().getUserData(user.id);
 
 		if (!description) {
@@ -210,10 +169,10 @@ async function getFeed() {
 				throw new Error('User has no public key');
 			}
 
-			let fetchedPosts: FetchedPost[] = [];
+			let fetchedPosts: Post[] = [];
 
 			fetchedPosts = parsePostTags(tags)
-				.map((p) => parsePostPayload(p, user.id, user.user, key))
+				.map((p) => openPost(p, { id: userid, name: name, publicKey: key }))
 				.filter((p) => p !== null);
 
 			fetchedPosts = fetchedPosts.filter((p) => {
@@ -357,7 +316,6 @@ async function setupKeys() {
 
 			const keys = await deriveKeypair(passphrase, userData.userid);
 
-			// FIXME: there might be errors here
 			try {
 				if (
 					keys.publicKeyB64u !==

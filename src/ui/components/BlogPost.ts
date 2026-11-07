@@ -1,10 +1,10 @@
-import { FetchedPost } from '../../domain/schemas';
+import { Post } from '../../domain/schemas';
 import { escapeHtml, sanitizeHTML } from '../sanitize';
 
-export function BlogPost(post: FetchedPost) {
+export function BlogPost(post: Post) {
 	const title = post.title;
-	const authorId = post.authorId;
-	const author = post.author;
+	const authorId = post.userid;
+	const author = post.authorName;
 	const content = post.content;
 	const date = new Date(post.created).toLocaleString('en-GB', {
 		weekday: 'long',
@@ -15,7 +15,7 @@ export function BlogPost(post: FetchedPost) {
 		minute: '2-digit',
 		hour12: true,
 	});
-	const initials = post.author
+	const initials = post.authorName
 		.split(' ')
 		.map((p) => p[0])
 		.join('');
@@ -32,8 +32,7 @@ export function BlogPost(post: FetchedPost) {
 
 	const sanitizedContent = doc.body.innerHTML;
 
-	const html =
-		`
+	const html = `
         <div class="forumpost blog_entry blog clearfix site">
     <div class="row header clearfix">
         <div class="left picture header">
@@ -54,23 +53,7 @@ export function BlogPost(post: FetchedPost) {
                 <a href="https://moodle.htlstp.ac.at/user/view.php?id=${authorId}">${escapeHtml(author)}</a>
                 - ${date}
             </div>
-            ` +
-		(post.badge
-			? `
-            <div>
-            	<div style="
-					background-color: ${post.badge.backgroundColor}; 
-					color: ${post.badge.color}; 
-					border-radius: 10px;
-					padding: 2px 4px;
-					display: inline-block;
-            	">
-            		${escapeHtml(post.badge.text)}
-				</div>
-			</div>
-		`
-			: '') +
-		`
+
         </div>
     </div>
     <div class="row maincontent clearfix">

@@ -1,12 +1,23 @@
-import { test, expect } from 'bun:test';
-import { Post } from '../src/domain/schemas';
+import { test, expect, beforeAll } from 'bun:test';
+import { PostBody } from '../src/domain/schemas';
 import { POST_VERSION } from '../src/constants';
 import { deriveKeypair } from '../src/crypto/keypair';
-import { StoredPostTags } from '../src/codec/postTags';
+import { SignedPostTags } from '../src/codec/postTags';
 import { CryptoKeyEnvelopeString } from '../src/codec/keyEnvelope';
+import { signPost } from '../src/domain/post';
+
+let publicKeyB64u: string;
+let privateKey: Uint8Array;
+
+beforeAll(async () => {
+	const keys = await deriveKeypair('very secure phrase', 42);
+
+	publicKeyB64u = keys.publicKeyB64u;
+	privateKey = keys.privateKey;
+});
 
 test('post chunk roundtrip works (small post)', () => {
-	const postPayload = JSON.stringify({
+	const postBody = {
 		title: 'Title',
 		created: Date.now(),
 		tags: [],
@@ -14,19 +25,19 @@ test('post chunk roundtrip works (small post)', () => {
 		userid: 42,
 		v: POST_VERSION,
 		id: 'abcde12345',
-	} satisfies Post);
+	};
 
-	const tags = StoredPostTags.encode({
-		payload: postPayload,
-	});
+	const signedPost = signPost(postBody, privateKey);
 
-	const post = StoredPostTags.decode(tags);
+	const tags = SignedPostTags.encode(signedPost);
 
-	expect(post.payload).toEqual(postPayload);
+	const post = SignedPostTags.decode(tags);
+
+	expect(JSON.parse(post.payload)).toEqual(postBody);
 });
 
 test('post chunk roundtrip works (large post)', () => {
-	const postPayload = JSON.stringify({
+	const postBody = {
 		title: 'Title',
 		created: Date.now(),
 		tags: [],
@@ -34,15 +45,15 @@ test('post chunk roundtrip works (large post)', () => {
 		userid: 42,
 		v: POST_VERSION,
 		id: 'abcde12345',
-	} satisfies Post);
+	};
 
-	const tags = StoredPostTags.encode({
-		payload: postPayload,
-	});
+	const signedPost = signPost(postBody, privateKey);
 
-	const post = StoredPostTags.decode(tags);
+	const tags = SignedPostTags.encode(signedPost);
 
-	expect(post.payload).toEqual(postPayload);
+	const post = SignedPostTags.decode(tags);
+
+	expect(JSON.parse(post.payload)).toEqual(postBody);
 });
 
 test('crypto key envelope works', () => {

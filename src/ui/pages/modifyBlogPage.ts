@@ -1,7 +1,7 @@
-import { FetchedPost } from '../../domain/schemas';
+import { Post } from '../../domain/schemas';
 import { BlogPost } from '../components/BlogPost';
 
-export function modifyBlogPage(posts: FetchedPost[]) {
+export function modifyBlogPage(posts: Post[]) {
 	console.log(`modified blog page with ${posts.length} posts`);
 
 	return () => {
