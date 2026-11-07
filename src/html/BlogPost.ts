@@ -34,7 +34,7 @@ export function BlogPost(post: FetchedPost) {
 
 	const html =
 		`
-        <div id="b22" class="forumpost blog_entry blog clearfix site">
+        <div class="forumpost blog_entry blog clearfix site">
     <div class="row header clearfix">
         <div class="left picture header">
             <a href="https://moodle.htlstp.ac.at/user/profile.php?id=${authorId}" class="d-inline-block aabtn">

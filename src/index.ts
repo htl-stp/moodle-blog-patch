@@ -252,7 +252,7 @@ async function getFeed() {
 			fetchedPosts = fetchedPosts.filter((p) => {
 				return (
 					!(p.created > Date.now()) &&
-					!(new Date(p.created).getFullYear() < 2026)
+					!(new Date(p.created).getFullYear() < 2026) // script exists since 2026, everything before that is invalid
 				);
 			});
 
@@ -397,19 +397,23 @@ async function setupKeys() {
 			const keys = await deriveKeypair(passphrase, userData.userid);
 
 			// FIXME: there might be errors here
-			if (keys.publicKeyB64u !== extractKeyEnvelopeFromTags(userData.tags, userData.userid).public_key) {
-				alert('Wrong passphrase!');
-				return;
+			try {
+				if (keys.publicKeyB64u !== extractKeyEnvelopeFromTags(userData.tags, userData.userid).public_key) {
+					alert('Wrong passphrase!');
+					return;
+				}
+			} catch (e) {
+				console.log((e as Error).message);
 			}
 
 			if (title.length > MAX_TITLE_LIMIT) {
-				alert(`Title is too long. Max length: 128, actual: ${title.length}`);
+				alert(`Title is too long. Max length: ${MAX_TITLE_LIMIT}, actual: ${title.length}`);
 				return;
 			}
 
 			if (description.length > MAX_CONTENT_LIMIT) {
 				alert(
-					`Description is too long. Max length: 1200, actual: ${description.length}`,
+					`Description is too long. Max length: ${MAX_CONTENT_LIMIT}, actual: ${description.length}`,
 				);
 				return;
 			}
