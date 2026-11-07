@@ -1,4 +1,4 @@
-import { ConfigData, StoredPost } from './types';
+import { StoredPost } from './types';
 
 type TamperMonkeyValue = null | string | object | undefined | boolean | number;
 

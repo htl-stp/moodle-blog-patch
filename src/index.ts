@@ -22,7 +22,6 @@ import { z } from 'zod';
 import { openModal } from './modals';
 import { generatePassphrase } from './diceware';
 import { deriveKeypair, sign, verify } from './crypto';
-import { p256_hasher } from '@noble/curves/nist.js';
 import { VCache } from './VCache';
 
 // required since types are now ["node", "bun"]

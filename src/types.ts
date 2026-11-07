@@ -1,4 +1,4 @@
-import { MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT, VERSION } from './constants';
+import { MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT } from './constants';
 import { z } from 'zod';
 
 export const EncodedConfigSchema = z.object({

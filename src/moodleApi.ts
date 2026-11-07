@@ -1,5 +1,4 @@
 import { MOODLE_DESCRIPTION_LIMIT } from './constants';
-import { PostChunkString } from './tagStore';
 
 export class MoodleApi {
 	private static instance = new MoodleApi();
