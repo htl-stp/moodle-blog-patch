@@ -1,19 +1,16 @@
-import { MoodleApi } from '../moodle/MoodleApi';
+import { MoodleApi, UserData } from '../moodle/MoodleApi';
 import { parsePostTags, signPost } from '../domain/post';
 import { PostBody, PostBodySchema } from '../domain/schemas';
 import { POST_VERSION } from '../constants';
 import { SignedPostTags } from '../codec/postTags';
+import { Draft } from './publishService';
 
 export class PostService {
 	static async addPost(
-		userid: number,
-		title: string,
-		content: string,
-		tags: string[],
+		userData: UserData,
+		draft: Draft,
 		privateKey: Uint8Array,
 	) {
-		const userData = await MoodleApi.getInstance().getUserData();
-
 		const postIds = parsePostTags(userData.tags)
 			.map((p) => PostBodySchema.parse(JSON.parse(p.payload)))
 			.map((p) => p.id);
@@ -25,11 +22,11 @@ export class PostService {
 
 		const p: PostBody = {
 			v: POST_VERSION,
-			userid: userid,
+			userid: userData.userid,
 			id: id,
-			title,
-			content,
-			tags,
+			title: draft.title,
+			content: draft.content,
+			tags: [],
 			created: Date.now(),
 		};
 

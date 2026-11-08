@@ -41,3 +41,11 @@ export function extractKeyEnvelopeFromTags(tags: string[], userId: number) {
 
 	throw new Error('No public key found.');
 }
+
+export function findKeyEnvelope(tags: string[], userId: number) {
+	try {
+		return extractKeyEnvelopeFromTags(tags, userId);
+	} catch (_) {
+		return undefined;
+	}
+}

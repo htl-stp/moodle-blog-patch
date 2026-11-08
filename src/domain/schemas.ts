@@ -1,5 +1,6 @@
 import { MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT } from '../constants';
 import { z } from 'zod';
+import { Draft } from '../services/publishService';
 
 export const PostBodySchema = z.object({
 	v: z.string(),
@@ -24,8 +25,4 @@ export type Post = PostBody & {
 	authorName: string;
 };
 
-export type SubmitHook = (
-	title: string,
-	description: string,
-	passphrase: string,
-) => void;
+export type SubmitHook = (draft: Draft) => void;

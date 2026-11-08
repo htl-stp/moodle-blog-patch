@@ -1,5 +1,12 @@
 import { MOODLE_DESCRIPTION_LIMIT } from '../constants';
 
+export type UserData = {
+	tags: string[];
+	description: string;
+	userid: number;
+	name: string;
+};
+
 export class MoodleApi {
 	private static instance = new MoodleApi();
 
@@ -117,9 +124,10 @@ export class MoodleApi {
 			tags.push(..._tags);
 		}
 
-		const description = doc.querySelector(
-			'div[id="region-main"] > div > div > div[class="description"]',
-		)?.textContent;
+		const description =
+			doc.querySelector(
+				'div[id="region-main"] > div > div > div[class="description"]',
+			)?.textContent ?? '';
 
 		const userid = Number(
 			doc.querySelector('div[data-userid]')?.getAttribute('data-userid'),
