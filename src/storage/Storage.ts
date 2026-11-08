@@ -37,4 +37,26 @@ export class Storage {
 	static setPinnedKeys(pinnedKeys: Record<number, string>): void {
 		GM_setValue('pinned_keys', pinnedKeys);
 	}
+
+	static getNames(): Record<number, string> {
+		return GM_getValue('names', {}) as Record<number, string>;
+	}
+
+	static addName(userId: number, name: string): boolean {
+		const names = Storage.getNames();
+
+		if (names[userId]) {
+			return false;
+		}
+
+		names[userId] = name;
+
+		Storage.setNames(names);
+
+		return true;
+	}
+
+	static setNames(names: Record<number, string>): void {
+		GM_setValue('names', names);
+	}
 }

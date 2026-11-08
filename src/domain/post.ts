@@ -1,16 +1,21 @@
 import { Post, PostBody, PostBodySchema, SignedPost } from './schemas';
 import { sign, verify } from '../crypto/keypair';
 import { PostChunkString, SignedPostTags } from '../codec/postTags';
+import { PostService } from '../services/PostService';
 
-export function signPost(body: PostBody, privateKey: Uint8Array): SignedPost {
+export async function signPost(
+	body: PostBody,
+	privateKey: Uint8Array,
+): Promise<SignedPost> {
 	const payload = JSON.stringify(body);
-	return { payload, signature: sign(payload, privateKey) };
+	const id = await computeId(body);
+	return { payload, signature: sign(payload, privateKey), id };
 }
 
-export function openPost(
+export async function openPost(
 	signed: SignedPost,
 	author: { id: number; name: string; publicKey: string },
-): Post | null {
+): Promise<Post | null> {
 	if (!verify(signed.payload, signed.signature, author.publicKey)) return null;
 
 	let json: unknown;
@@ -24,11 +29,13 @@ export function openPost(
 	if (!parsed.success) return null;
 	const body = parsed.data;
 
+	if ((await computeId(body)) !== signed.id) return null;
+
 	if (body.userid !== author.id) return null;
 	if (body.created > Date.now()) return null;
 	if (new Date(body.created).getFullYear() < 2026) return null;
 
-	return { ...body, authorName: author.name };
+	return { ...body, authorName: author.name, id: signed.id };
 }
 
 export function parsePostTags(strings: string[]) {
@@ -69,4 +76,14 @@ export function parsePostTags(strings: string[]) {
 	console.log(posts);
 
 	return posts;
+}
+
+export async function computeId(b: PostBody): Promise<string> {
+	const data = new TextEncoder().encode(
+		JSON.stringify([b.v, b.userid, b.title, b.content, b.tags, b.created]),
+	);
+	const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', data));
+	return Array.from(hash.slice(0, 8), (x) =>
+		x.toString(16).padStart(2, '0'),
+	).join('');
 }

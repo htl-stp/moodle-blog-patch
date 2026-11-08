@@ -16,7 +16,7 @@ beforeAll(async () => {
 	privateKey = keys.privateKey;
 });
 
-test('post chunk roundtrip works (small post)', () => {
+test('post chunk roundtrip works (small post)', async () => {
 	const postBody = {
 		title: 'Title',
 		created: Date.now(),
@@ -27,7 +27,7 @@ test('post chunk roundtrip works (small post)', () => {
 		id: 'abcde12345',
 	};
 
-	const signedPost = signPost(postBody, privateKey);
+	const signedPost = await signPost(postBody, privateKey);
 
 	const tags = SignedPostTags.encode(signedPost);
 
@@ -36,7 +36,7 @@ test('post chunk roundtrip works (small post)', () => {
 	expect(JSON.parse(post.payload)).toEqual(postBody);
 });
 
-test('post chunk roundtrip works (large post)', () => {
+test('post chunk roundtrip works (large post)', async () => {
 	const postBody = {
 		title: 'Title',
 		created: Date.now(),
@@ -47,7 +47,7 @@ test('post chunk roundtrip works (large post)', () => {
 		id: 'abcde12345',
 	};
 
-	const signedPost = signPost(postBody, privateKey);
+	const signedPost = await signPost(postBody, privateKey);
 
 	const tags = SignedPostTags.encode(signedPost);
 

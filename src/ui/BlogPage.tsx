@@ -25,7 +25,6 @@ export function BlogPage() {
 				posts.map((p) => <BlogPost key={`${p.userid}:${p.id}`} post={p} />)
 			)}
 
-
 			<style>
 				{`
                 .post-content {

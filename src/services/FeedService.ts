@@ -1,5 +1,5 @@
 import { MoodleApi } from '../moodle/MoodleApi';
-import { Post } from '../domain/schemas';
+import { Post, PostBodySchema, SignedPost } from '../domain/schemas';
 import { Storage } from '../storage/Storage';
 import { extractKeyEnvelopeFromTags } from '../codec/keyEnvelope';
 import { openPost, parsePostTags } from '../domain/post';
@@ -11,11 +11,13 @@ export class FeedService {
 			await MoodleApi.getInstance().getInterestedUsersForTag('moodle');
 		console.log(users);
 
-		const posts: Post[] = [];
+		const allTags: string[] = [];
 
 		for (const user of users) {
 			const { tags, description, userid, name } =
 				await MoodleApi.getInstance().getUserData(user.id);
+
+			Storage.addName(userid, name);
 
 			if (!description) {
 				continue;
@@ -35,27 +37,43 @@ export class FeedService {
 					throw new Error('User has no public key');
 				}
 
-				let fetchedPosts: Post[] = [];
-
-				fetchedPosts = parsePostTags(tags)
-					.map((p) => openPost(p, { id: userid, name: name, publicKey: key }))
-					.filter((p) => p !== null);
-
-				fetchedPosts = fetchedPosts.filter((p) => {
-					return (
-						!(p.created > Date.now()) &&
-						!(new Date(p.created).getFullYear() < 2026) // script exists since 2026, everything before that is invalid
-					);
-				});
-
-				posts.push(...fetchedPosts);
-
-				console.log(`received ${fetchedPosts.length} posts from ${user.user}`);
+				allTags.push(...tags);
 			} catch (e) {
 				console.log(`Error for: ${user.user}`);
 				console.error(e);
 			}
 		}
+
+		const peekUserId = (signed: SignedPost) => {
+			try {
+				return PostBodySchema.parse(JSON.parse(signed.payload)).userid;
+			} catch (error) {
+				return undefined;
+			}
+		};
+
+		const allPosts = parsePostTags(allTags);
+		const pinnedKeys = Storage.getPinnedKeys();
+		const names = Storage.getNames();
+
+		const verified = new Map<string, Post>();
+
+		for (const signed of allPosts) {
+			const claimed = peekUserId(signed);
+			if (!claimed) continue;
+			const key = pinnedKeys[claimed];
+			if (!key) continue;
+			const name = names[claimed];
+			if (!name) continue;
+			const post = await openPost(signed, {
+				id: claimed,
+				name: name,
+				publicKey: key,
+			});
+			if (post) verified.set(`${post.userid}:${post.id}`, post);
+		}
+
+		const posts = Array.from(verified.values());
 
 		console.log(posts);
 

@@ -54,7 +54,7 @@ export const SignedPostTags = z.codec(z.array(z.string()), SignedPostSchema, {
 	encode: (value) => {
 		const post = PostBodySchema.parse(JSON.parse(value.payload));
 		const user_id = post.userid;
-		const blog_id = post.id;
+		const blog_id = value.id;
 
 		// StoredPost JSON -> UTF-8 bytes -> base64
 		const bytes = new TextEncoder().encode(JSON.stringify(value));
