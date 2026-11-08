@@ -1,17 +1,10 @@
-import { addBlogLink } from './ui/addBlogLink';
-import { modifyBlogPage } from './ui/pages/modifyBlogPage';
-import { MoodleApi } from './moodle/MoodleApi';
-import { MAX_CONTENT_LIMIT, MAX_TITLE_LIMIT } from './constants';
-import { deriveKeypair } from './crypto/keypair';
-import { extractKeyEnvelopeFromTags } from './codec/keyEnvelope';
-import { setupKeys } from './ui/components/setupKeysModal';
-import { FeedService } from './services/FeedService';
-import { PostService } from './services/PostService';
-import { Draft, publish } from './services/publishService';
-import { installAddPostModal } from './ui/components/addPostModal';
-
-// required since types are now ["node", "bun"]
-declare const window: Window;
+import {addBlogLink} from './ui/addBlogLink';
+import {setPageShell} from './ui/pages/setPageShell';
+import {setupKeys} from './ui/components/setupKeysModal';
+import {Draft, publish} from './services/publishService';
+import {installAddPostModal} from './ui/components/addPostModal';
+import {render} from "preact";
+import {BlogPage, mountBlogPage} from './ui/BlogPage';
 
 export function waitFor<T extends Element>(selector: string): Promise<T> {
 	return new Promise((resolve) => {
@@ -51,12 +44,15 @@ async function onSubmit(draft: Draft) {
 		location.href.startsWith('https://moodle.htlstp.ac.at/blog/index.php') ||
 		location.href.startsWith('https://moodle.htlstp.ac.at/blog/edit.php')
 	) {
-		await waitFor('#page-content')
-		modifyBlogPage([])();
+		await waitFor('#page-content');
+		setPageShell();
 
-		const posts = await FeedService.getFeed();
+		await waitFor('#region-main [role="main"]');
+		const main = document.querySelector('#region-main [role="main"]')!;
 
-		modifyBlogPage(posts)();
+		main.replaceChildren();
+
+		mountBlogPage(main);
 	}
 
 	await setupKeys();

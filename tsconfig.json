@@ -9,7 +9,7 @@
 		// See also https://aka.ms/tsconfig/module
 		"module": "esnext",
 		"target": "esnext",
-		"types": ["bun", "node"],
+		"types": ["bun"],
 		// For nodejs:
 		// "lib": ["esnext"],
 		// "types": ["node"],
@@ -35,6 +35,8 @@
 		// Recommended Options
 		"strict": true,
 		"jsx": "react-jsx",
+		"jsxImportSource": "preact",
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
 		"verbatimModuleSyntax": false,
 		"isolatedModules": true,
 		"noUncheckedSideEffectImports": true,
