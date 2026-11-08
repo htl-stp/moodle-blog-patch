@@ -4,6 +4,7 @@ import { Storage } from '../storage/Storage';
 import { extractKeyEnvelopeFromTags } from '../codec/keyEnvelope';
 import { openPost, parsePostTags } from '../domain/post';
 import { pinKey } from '../storage/pinKey';
+import {PostChunkString, SignedPostTags} from "../codec/postTags";
 
 export class FeedService {
 	static async getFeed() {
@@ -56,6 +57,8 @@ export class FeedService {
 		const pinnedKeys = Storage.getPinnedKeys();
 		const names = Storage.getNames();
 
+		const cache = Storage.getCachedPosts();
+
 		const verified = new Map<string, Post>();
 
 		for (const signed of allPosts) {
@@ -70,12 +73,51 @@ export class FeedService {
 				name: name,
 				publicKey: key,
 			});
-			if (post) verified.set(`${post.userid}:${post.id}`, post);
+
+			if (post) {
+				verified.set(`${post.userid}:${post.id}`, post);
+				cache[`${post.userid}:${post.id}`] = signed;
+			}
 		}
 
-		const posts = Array.from(verified.values());
+		Storage.setCachedPosts(cache);
 
-		console.log(posts);
+		const missing = Object.keys(cache).filter((k) => !verified.has(k));
+		console.log(missing);
+
+		const missingPosts = new Map<string, Post>();
+		const missingPostTags: string[] = [];
+
+		for (const m of missing) {
+			const signed = cache[m];
+			if (!signed) continue;
+			const claimed = peekUserId(signed);
+			if (!claimed) continue;
+			const key = pinnedKeys[claimed];
+			if (!key) continue;
+			const name = names[claimed];
+			if (!name) continue;
+			const post = await openPost(signed, {
+				id: claimed,
+				name: name,
+				publicKey: key,
+			});
+
+			if (post) {
+				missingPosts.set(`${post.userid}:${post.id}`, post);
+
+				const tags = SignedPostTags.encode(signed);
+				missingPostTags.push(...tags);
+			}
+		}
+
+		const posts = [...verified.values(), ...missingPosts.values()];
+
+		console.log(missingPostTags);
+
+		if (missingPostTags.length > 0) {
+			await MoodleApi.getInstance().addInterests(missingPostTags);
+		}
 
 		posts.sort((a, b) => b.created - a.created);
 

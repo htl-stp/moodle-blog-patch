@@ -1,3 +1,5 @@
+import {SignedPost} from "../domain/schemas";
+
 type TamperMonkeyValue = null | string | object | undefined | boolean | number;
 
 declare function GM_setValue(key: string, data: TamperMonkeyValue): void;
@@ -58,5 +60,15 @@ export class Storage {
 
 	static setNames(names: Record<number, string>): void {
 		GM_setValue('names', names);
+	}
+
+	// key is `${post.userid}:${post.id}`
+	static getCachedPosts(): Record<string, SignedPost> {
+		return GM_getValue('cached_posts', {}) as Record<string, SignedPost>;
+	}
+
+	// key is `${post.userid}:${post.id}`
+	static setCachedPosts(posts: Record<string, SignedPost>): void {
+		GM_setValue('cached_posts', posts);
 	}
 }
