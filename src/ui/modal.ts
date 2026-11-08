@@ -114,7 +114,7 @@ export async function openModal(
 	]);
 
 	const modal: MoodleModal = await Modal.create({
-		title,
+		title: escapeHtml(title),
 		body,
 		footer: footer + renderButtons(buttons),
 		large,

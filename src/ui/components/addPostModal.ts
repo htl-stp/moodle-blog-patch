@@ -18,6 +18,9 @@ const FORM_HTML = `
 		<input type="password" id="post-passphrase" name="passphrase" autocomplete="off">
 	</div>
 </form>
+
+<p style="text-align: center">Posts are <strong>permanent</strong> and cannot be edited or deleted!</p>
+
 <style>
 	.mb-field { display: flex; justify-content: space-between; align-items: start; padding-bottom: 8px; }
 	.mb-field input, .mb-field textarea { width: 80%; }
