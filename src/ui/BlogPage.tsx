@@ -24,6 +24,25 @@ export function BlogPage() {
 			) : (
 				posts.map((p) => <BlogPost key={`${p.userid}:${p.id}`} post={p} />)
 			)}
+
+
+			<style>
+				{`
+                .post-content {
+                    display: -webkit-box;
+                    -webkit-box-orient: vertical;
+                    -webkit-line-clamp: 7;
+                    overflow: hidden;
+                }
+                
+                .mb-content img {
+					max-width: min(100%, 480px);
+					max-height: 60vh;
+					height: auto;
+					object-fit: contain;
+					cursor: zoom-in;
+				}`}
+			</style>
 		</div>
 	);
 }
