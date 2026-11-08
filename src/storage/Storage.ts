@@ -1,5 +1,3 @@
-import { SignedPost } from '../domain/schemas';
-
 type TamperMonkeyValue = null | string | object | undefined | boolean | number;
 
 declare function GM_setValue(key: string, data: TamperMonkeyValue): void;

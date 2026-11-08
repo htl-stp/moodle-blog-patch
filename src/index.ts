@@ -1,10 +1,9 @@
-import {addBlogLink} from './ui/addBlogLink';
-import {setPageShell} from './ui/pages/setPageShell';
-import {setupKeys} from './ui/components/setupKeysModal';
-import {Draft, publish} from './services/publishService';
-import {installAddPostModal} from './ui/components/addPostModal';
-import {render} from "preact";
-import {BlogPage, mountBlogPage} from './ui/BlogPage';
+import { addBlogLink } from './ui/addBlogLink';
+import { setPageShell } from './ui/pages/setPageShell';
+import { setupKeys } from './ui/components/setupKeysModal';
+import { Draft, publish } from './services/publishService';
+import { installAddPostModal } from './ui/components/addPostModal';
+import { mountBlogPage } from './ui/BlogPage';
 
 export function waitFor<T extends Element>(selector: string): Promise<T> {
 	return new Promise((resolve) => {

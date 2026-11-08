@@ -1,15 +1,11 @@
-import {Post} from '../../domain/schemas';
-import {BlogPost} from '../components/BlogPost';
-
 export function setPageShell() {
+	const pageContent = document.getElementById('page-content');
 
-    const pageContent = document.getElementById('page-content');
+	if (!pageContent) {
+		return;
+	}
 
-    if (!pageContent) {
-        return;
-    }
-
-    pageContent.outerHTML = `
+	pageContent.outerHTML = `
         <div id="page-content" class="d-flex flex-wrap  blocks-pre   d-print-block">
             <div id="region-main-box" class="region-main">
                 <div id="region-main" class="region-main-content">
