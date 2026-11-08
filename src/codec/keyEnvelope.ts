@@ -23,3 +23,21 @@ export const CryptoKeyEnvelopeString = z.codec(z.string(), CryptoKeyEnvelope, {
 	},
 	encode: (v) => `p:${v.user_id}:${v.name}:${v.public_key}`,
 });
+
+export function extractKeyEnvelopeFromTags(tags: string[], userId: number) {
+	tags = tags.filter((t) => t.startsWith('p:'));
+
+	for (const tag of tags) {
+		try {
+			const decoded = CryptoKeyEnvelopeString.decode(tag);
+
+			if (decoded.user_id !== userId) {
+				continue;
+			}
+
+			return decoded;
+		} catch (_) {}
+	}
+
+	throw new Error('No public key found.');
+}
