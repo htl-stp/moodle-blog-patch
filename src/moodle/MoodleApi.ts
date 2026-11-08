@@ -73,11 +73,7 @@ export class MoodleApi {
 			throw new Error(`POST failed: ${result.status}`);
 		}
 
-		console.log(data);
-
 		console.log('Submission response:', result.url, result.status);
-
-		console.log(result.text());
 	}
 
 	async setDescription(description: string) {

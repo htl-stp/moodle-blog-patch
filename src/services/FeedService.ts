@@ -4,7 +4,8 @@ import { Storage } from '../storage/Storage';
 import { extractKeyEnvelopeFromTags } from '../codec/keyEnvelope';
 import { openPost, parsePostTags } from '../domain/post';
 import { pinKey } from '../storage/pinKey';
-import {PostChunkString, SignedPostTags} from "../codec/postTags";
+import { PostChunkString, SignedPostTags } from '../codec/postTags';
+import { tupleToBody } from '../domain/postWire';
 
 export class FeedService {
 	static async getFeed() {
@@ -15,14 +16,11 @@ export class FeedService {
 		const allTags: string[] = [];
 
 		for (const user of users) {
-			const { tags, description, userid, name } =
-				await MoodleApi.getInstance().getUserData(user.id);
+			const { tags, userid, name } = await MoodleApi.getInstance().getUserData(
+				user.id,
+			);
 
 			Storage.addName(userid, name);
-
-			if (!description) {
-				continue;
-			}
 
 			try {
 				let key = Storage.getPinnedKeys()[userid];
@@ -47,13 +45,19 @@ export class FeedService {
 
 		const peekUserId = (signed: SignedPost) => {
 			try {
-				return PostBodySchema.parse(JSON.parse(signed.payload)).userid;
+				return PostBodySchema.parse(tupleToBody(JSON.parse(signed.payload)))
+					.userid;
 			} catch (error) {
 				return undefined;
 			}
 		};
 
+		console.log('All Tags:', allTags);
+
 		const allPosts = parsePostTags(allTags);
+
+		console.log('All Posts:', allPosts);
+
 		const pinnedKeys = Storage.getPinnedKeys();
 		const names = Storage.getNames();
 
@@ -68,7 +72,7 @@ export class FeedService {
 			if (!key) continue;
 			const name = names[claimed];
 			if (!name) continue;
-			const post = await openPost(signed, {
+			const post = openPost(signed, {
 				id: claimed,
 				name: name,
 				publicKey: key,
@@ -83,7 +87,6 @@ export class FeedService {
 		Storage.setCachedPosts(cache);
 
 		const missing = Object.keys(cache).filter((k) => !verified.has(k));
-		console.log(missing);
 
 		const missingPosts = new Map<string, Post>();
 		const missingPostTags: string[] = [];
@@ -97,7 +100,7 @@ export class FeedService {
 			if (!key) continue;
 			const name = names[claimed];
 			if (!name) continue;
-			const post = await openPost(signed, {
+			const post = openPost(signed, {
 				id: claimed,
 				name: name,
 				publicKey: key,
@@ -113,7 +116,7 @@ export class FeedService {
 
 		const posts = [...verified.values(), ...missingPosts.values()];
 
-		console.log(missingPostTags);
+		console.log('Final Posts:', posts);
 
 		if (missingPostTags.length > 0) {
 			await MoodleApi.getInstance().addInterests(missingPostTags);

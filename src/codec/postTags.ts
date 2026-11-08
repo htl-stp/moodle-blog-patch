@@ -1,5 +1,7 @@
 import { PostBodySchema, SignedPostSchema } from '../domain/schemas';
 import { z } from 'zod';
+import { computeId } from '../domain/post';
+import { tupleToBody } from '../domain/postWire';
 
 const MAX_STRING_LENGTH = 255;
 
@@ -52,9 +54,10 @@ export const SignedPostTags = z.codec(z.array(z.string()), SignedPostSchema, {
 		}
 	},
 	encode: (value) => {
-		const post = PostBodySchema.parse(JSON.parse(value.payload));
+		console.log(tupleToBody(JSON.parse(value.payload)));
+		const post = PostBodySchema.parse(tupleToBody(JSON.parse(value.payload)));
 		const user_id = post.userid;
-		const blog_id = value.id;
+		const blog_id = computeId(post);
 
 		// StoredPost JSON -> UTF-8 bytes -> base64
 		const bytes = new TextEncoder().encode(JSON.stringify(value));
@@ -80,7 +83,7 @@ export const SignedPostTags = z.codec(z.array(z.string()), SignedPostSchema, {
 		const room = roomFor(total);
 		return Array.from({ length: total }, (_, i) =>
 			PostChunkString.encode({
-				user_id: user_id!, // user_id should be on all v0.0.4 posts
+				user_id: user_id,
 				blog_id,
 				chunk_id: i + 1,
 				max_chunks: total,

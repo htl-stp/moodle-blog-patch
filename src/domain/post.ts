@@ -1,26 +1,27 @@
 import { Post, PostBody, PostBodySchema, SignedPost } from './schemas';
 import { sign, verify } from '../crypto/keypair';
 import { PostChunkString, SignedPostTags } from '../codec/postTags';
-import { PostService } from '../services/PostService';
+import { bodyToTuple, tupleToBody } from './postWire';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { bytesToHex } from '@noble/curves/utils.js';
 
 export async function signPost(
 	body: PostBody,
 	privateKey: Uint8Array,
 ): Promise<SignedPost> {
-	const payload = JSON.stringify(body);
-	const id = await computeId(body);
-	return { payload, signature: sign(payload, privateKey), id };
+	const payload = JSON.stringify(bodyToTuple(body));
+	return { payload, signature: sign(payload, privateKey) };
 }
 
-export async function openPost(
+export function openPost(
 	signed: SignedPost,
 	author: { id: number; name: string; publicKey: string },
-): Promise<Post | null> {
+): Post | null {
 	if (!verify(signed.payload, signed.signature, author.publicKey)) return null;
 
 	let json: unknown;
 	try {
-		json = JSON.parse(signed.payload);
+		json = tupleToBody(JSON.parse(signed.payload));
 	} catch {
 		return null;
 	}
@@ -29,19 +30,15 @@ export async function openPost(
 	if (!parsed.success) return null;
 	const body = parsed.data;
 
-	if ((await computeId(body)) !== signed.id) return null;
-
 	if (body.userid !== author.id) return null;
 	if (body.created > Date.now()) return null;
 	if (new Date(body.created).getFullYear() < 2026) return null;
 
-	return { ...body, authorName: author.name, id: signed.id };
+	return { ...body, authorName: author.name, id: computeId(body) };
 }
 
 export function parsePostTags(strings: string[]) {
 	const groups = new Map<string, string[]>();
-
-	console.log(strings);
 
 	for (const s of strings) {
 		const chunk = PostChunkString.safeDecode(s);
@@ -58,32 +55,29 @@ export function parsePostTags(strings: string[]) {
 	const posts = [];
 
 	for (const [key, list] of groups) {
-		const stored = SignedPostTags.safeDecode(list);
-		if (!stored.success) {
-			console.warn(`Skipping ${key}:`, stored.error.message);
+		const signed = SignedPostTags.safeDecode(list);
+		if (!signed.success) {
+			console.warn(`Skipping ${key}:`, signed.error.message);
 			continue;
 		}
 
-		const post = PostBodySchema.safeParse(JSON.parse(stored.data.payload));
+		const post = PostBodySchema.safeParse(
+			tupleToBody(JSON.parse(signed.data.payload)),
+		);
 		if (!post.success) {
 			console.warn(`Skipping ${key}: invalid payload`);
 			continue;
 		}
 
-		posts.push(stored.data);
+		posts.push(signed.data);
 	}
-
-	console.log(posts);
 
 	return posts;
 }
 
-export async function computeId(b: PostBody): Promise<string> {
+export function computeId(b: PostBody): string {
 	const data = new TextEncoder().encode(
-		JSON.stringify([b.v, b.userid, b.title, b.content, b.tags, b.created]),
+		JSON.stringify([b.v, b.userid, b.title, b.content, b.created]),
 	);
-	const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', data));
-	return Array.from(hash.slice(0, 8), (x) =>
-		x.toString(16).padStart(2, '0'),
-	).join('');
+	return bytesToHex(sha256(data).slice(0, 8));
 }

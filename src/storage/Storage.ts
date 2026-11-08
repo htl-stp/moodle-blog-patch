@@ -1,4 +1,4 @@
-import {SignedPost} from "../domain/schemas";
+import { SignedPost } from '../domain/schemas';
 
 type TamperMonkeyValue = null | string | object | undefined | boolean | number;
 

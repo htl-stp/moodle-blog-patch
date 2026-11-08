@@ -16,7 +16,6 @@ export class PostService {
 			userid: userData.userid,
 			title: draft.title,
 			content: draft.content,
-			tags: [],
 			created: Date.now(),
 		};
 

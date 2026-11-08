@@ -1,10 +1,11 @@
 import { test, expect, beforeAll } from 'bun:test';
-import { PostBody } from '../src/domain/schemas';
+import { PostBody, PostBodySchema } from '../src/domain/schemas';
 import { POST_VERSION } from '../src/constants';
 import { deriveKeypair } from '../src/crypto/keypair';
 import { SignedPostTags } from '../src/codec/postTags';
 import { CryptoKeyEnvelopeString } from '../src/codec/keyEnvelope';
 import { signPost } from '../src/domain/post';
+import { tupleToBody } from '../src/domain/postWire';
 
 let publicKeyB64u: string;
 let privateKey: Uint8Array;
@@ -17,43 +18,43 @@ beforeAll(async () => {
 });
 
 test('post chunk roundtrip works (small post)', async () => {
-	const postBody = {
+	const postBody: PostBody = {
 		title: 'Title',
 		created: Date.now(),
-		tags: [],
 		content: '12345',
 		userid: 42,
 		v: POST_VERSION,
-		id: 'abcde12345',
 	};
 
 	const signedPost = await signPost(postBody, privateKey);
 
 	const tags = SignedPostTags.encode(signedPost);
 
-	const post = SignedPostTags.decode(tags);
+	const signed = SignedPostTags.decode(tags);
 
-	expect(JSON.parse(post.payload)).toEqual(postBody);
+	const post = tupleToBody(JSON.parse(signed.payload))!;
+
+	expect(post).toEqual(postBody);
 });
 
 test('post chunk roundtrip works (large post)', async () => {
-	const postBody = {
+	const postBody: PostBody = {
 		title: 'Title',
 		created: Date.now(),
-		tags: [],
 		content: '12345'.repeat(100),
 		userid: 42,
 		v: POST_VERSION,
-		id: 'abcde12345',
 	};
 
 	const signedPost = await signPost(postBody, privateKey);
 
 	const tags = SignedPostTags.encode(signedPost);
 
-	const post = SignedPostTags.decode(tags);
+	const signed = SignedPostTags.decode(tags);
 
-	expect(JSON.parse(post.payload)).toEqual(postBody);
+	const post = tupleToBody(JSON.parse(signed.payload))!;
+
+	expect(post).toEqual(postBody);
 });
 
 test('crypto key envelope works', () => {
