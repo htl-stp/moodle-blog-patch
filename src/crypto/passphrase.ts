@@ -15,7 +15,7 @@ function randomIndex(n: number) {
 	return buf[0]! % n;
 }
 
-export function generatePassphrase(words = 5) {
+export function generatePassphrase(words = 6) {
 	const list = WORDS;
 
 	return Array.from(

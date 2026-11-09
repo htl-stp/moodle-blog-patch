@@ -16,25 +16,6 @@ export class MoodleApi {
 		return this.instance;
 	}
 
-	/**
-	 * Gets the description of the user if specified, else the currently logged in one.
-	 * @param userId
-	 */
-	async getDescription(userId?: number) {
-		const res = await fetch(
-			'https://moodle.htlstp.ac.at/user/profile.php' +
-				(userId ? `?id=${userId}` : ''),
-		);
-
-		const html = await res.text();
-
-		const doc = new DOMParser().parseFromString(html, 'text/html');
-
-		return doc.querySelector(
-			'div[id="region-main"] > div > div > div[class="description"]',
-		)?.textContent;
-	}
-
 	private async getProfileForm() {
 		const res = await fetch('https://moodle.htlstp.ac.at/user/edit.php');
 
@@ -125,7 +106,7 @@ export class MoodleApi {
 				'div[id="region-main"] > div > div > div[class="description"]',
 			)?.textContent ?? '';
 
-		const userid = Number(
+		const userid = userId ?? Number(
 			doc.querySelector('div[data-userid]')?.getAttribute('data-userid'),
 		);
 
