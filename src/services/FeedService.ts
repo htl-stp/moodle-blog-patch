@@ -13,7 +13,7 @@ export class FeedService {
 			await MoodleApi.getInstance().getInterestedUsersForTag('moodle');
 		console.log(users);
 
-		const allTags: string[] = [];
+		const allTags: string[][] = [];
 
 		for (const user of users) {
 			const { tags, userid, name } = await MoodleApi.getInstance().getUserData(
@@ -36,7 +36,7 @@ export class FeedService {
 					throw new Error('User has no public key');
 				}
 
-				allTags.push(...tags);
+				allTags.push(tags);
 			} catch (e) {
 				console.log(`Error for: ${user.user}`);
 				console.error(e);
@@ -54,7 +54,7 @@ export class FeedService {
 
 		console.log('All Tags:', allTags);
 
-		const allPosts = parsePostTags(allTags);
+		const allPosts = allTags.map((p) => parsePostTags(p)).flat();
 
 		console.log('All Posts:', allPosts);
 

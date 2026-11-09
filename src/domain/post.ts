@@ -61,11 +61,16 @@ export function parsePostTags(strings: string[]) {
 			continue;
 		}
 
-		const post = PostBodySchema.safeParse(
-			tupleToBody(JSON.parse(signed.data.payload)),
-		);
-		if (!post.success) {
-			console.warn(`Skipping ${key}: invalid payload`);
+		try {
+			const post = PostBodySchema.safeParse(
+				tupleToBody(JSON.parse(signed.data.payload)),
+			);
+			if (!post.success) {
+				console.warn(`Skipping ${key}: invalid payload`);
+				continue;
+			}
+		} catch (e) {
+			console.error(e);
 			continue;
 		}
 

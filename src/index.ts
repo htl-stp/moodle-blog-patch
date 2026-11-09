@@ -4,6 +4,7 @@ import { setupKeys } from './ui/components/setupKeysModal';
 import { Draft, publish } from './services/publishService';
 import { installAddPostModal } from './ui/components/addPostModal';
 import { mountBlogPage } from './ui/BlogPage';
+import { MoodleApi } from './moodle/MoodleApi';
 
 export function waitFor<T extends Element>(selector: string): Promise<T> {
 	return new Promise((resolve) => {
@@ -25,6 +26,7 @@ export function waitFor<T extends Element>(selector: string): Promise<T> {
 async function onSubmit(draft: Draft) {
 	try {
 		await publish(draft);
+		await MoodleApi.getInstance().addInterests(['moodle']);
 		location.href = 'https://moodle.htlstp.ac.at/blog/index.php';
 	} catch (e) {
 		alert(`Could not add post to blog. Reason: ${(e as Error).message}`);

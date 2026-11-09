@@ -111,13 +111,24 @@ export const PostChunkString = z.codec(z.string(), PostChunk, {
 			return z.NEVER;
 		}
 
-		return PostChunk.parse({
+		const safe = PostChunk.safeParse({
 			user_id: user_id,
 			blog_id: blog_id,
 			chunk_id: chunk_id,
 			max_chunks: max_chunks,
 			content: content,
 		});
+
+		if (safe.error) {
+			ctx.issues.push({
+				code: 'custom',
+				message: 'Unable to parse chunk',
+				input: str,
+			});
+			return z.NEVER;
+		}
+
+		return safe.data;
 	},
 	encode: (v) =>
 		`b:${v.user_id}:${v.blog_id}:${v.chunk_id}:${v.max_chunks}:${v.content}`,

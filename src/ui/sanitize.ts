@@ -1,30 +1,33 @@
 import DOMPurify from 'dompurify';
 
-export function escapeHtml(text: string): string {
-	const el = document.createElement('div');
-	el.textContent = text;
-	return el.innerHTML;
-}
+export const escapeHtml = (s: string) =>
+	s.replace(
+		/[&<>"']/g,
+		(c) =>
+			({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[
+				c
+			]!,
+	);
+
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+	if (node.tagName === 'A') node.setAttribute('rel', 'noopener noreferrer');
+});
+
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+	if (node.tagName !== 'IMG') return;
+
+	const src = node.getAttribute('src') ?? '';
+	if (!/^https:\/\//i.test(src)) {
+		node.remove();
+		return;
+	}
+
+	node.setAttribute('loading', 'lazy');
+	node.setAttribute('decoding', 'async');
+	node.setAttribute('referrerpolicy', 'no-referrer');
+});
 
 export function sanitizeHTML(html: string): string {
-	DOMPurify.addHook('afterSanitizeAttributes', (node) => {
-		if (node.tagName === 'A') node.setAttribute('rel', 'noopener noreferrer');
-	});
-
-	DOMPurify.addHook('afterSanitizeAttributes', (node) => {
-		if (node.tagName !== 'IMG') return;
-
-		const src = node.getAttribute('src') ?? '';
-		if (!/^https:\/\//i.test(src)) {
-			node.remove();
-			return;
-		}
-
-		node.setAttribute('loading', 'lazy');
-		node.setAttribute('decoding', 'async');
-		node.setAttribute('referrerpolicy', 'no-referrer');
-	});
-
 	const clean = DOMPurify.sanitize(html, {
 		ALLOWED_TAGS: [
 			'div',
