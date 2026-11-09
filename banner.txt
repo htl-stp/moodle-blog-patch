@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         Moodle Blog Patch (prototype)
-// @version      0.4.0
+// @name         Moodle Blog Patch
+// @version      1.0.0
 // @description  adds the blogs back
 // @author       daftvoid
 // @match        https://moodle.htlstp.ac.at/*
@@ -14,9 +14,3 @@
 // @grant        GM_deleteValue
 // @run-at       document-start
 // ==/UserScript==
-
-/*
-this is still a prototype
-future versions may break old blogs
-this script will modify your user bio and interests (tags)
-*/

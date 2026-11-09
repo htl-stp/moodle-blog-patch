@@ -1,4 +1,3 @@
-export const VERSION = '0.4.0';
 export const POST_VERSION = 4;
 
 export const MOODLE_DESCRIPTION_LIMIT = 5000;
