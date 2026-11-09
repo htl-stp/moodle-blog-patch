@@ -106,9 +106,11 @@ export class MoodleApi {
 				'div[id="region-main"] > div > div > div[class="description"]',
 			)?.textContent ?? '';
 
-		const userid = userId ?? Number(
-			doc.querySelector('div[data-userid]')?.getAttribute('data-userid'),
-		);
+		const userid =
+			userId ??
+			Number(
+				doc.querySelector('div[data-userid]')?.getAttribute('data-userid'),
+			);
 
 		const name = doc.querySelector('title')!.textContent.split(':')[0]!;
 
